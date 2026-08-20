@@ -118,7 +118,10 @@ export default function DayDetailSheet({
                   className="flex items-baseline gap-2 border-b border-dotted border-border py-1.5"
                 >
                   <span className="min-w-0 flex-1 truncate">{entry.exerciseName}</span>
-                  <span className="text-accent">{entry.weight}</span>
+                  <span className="text-accent">
+                    {entry.weight}
+                    <span className="text-sm text-dim"> lbs</span>
+                  </span>
                   {entry.note ? (
                     <span className="min-w-0 max-w-[45%] truncate text-sm text-dim">
                       {entry.note}

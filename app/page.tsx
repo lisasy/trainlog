@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Calendar from "@/components/Calendar";
 import DayDetailSheet from "@/components/DayDetailSheet";
+import PREditSheet from "@/components/PREditSheet";
 import PRList from "@/components/PRList";
 import Sidebar from "@/components/Sidebar";
 import StreakBadge from "@/components/StreakBadge";
@@ -30,6 +31,7 @@ import {
   removePREntry,
   savePREntries,
   saveRemovedSeedIds,
+  updatePREntry,
 } from "@/lib/prs";
 import {
   applyTheme,
@@ -70,6 +72,10 @@ export default function Home() {
   const [themeOpen, setThemeOpen] = useState(false);
   const [cursorDate, setCursorDate] = useState<DateKey | null>(null);
   const [view, setView] = useState<"calendar" | "prs">("calendar");
+  /** Ledger drawer: an entry to edit, a name to prefill, or closed. */
+  const [prSheet, setPRSheet] = useState<
+    { mode: "add"; exerciseName?: string } | { mode: "edit"; id: string } | null
+  >(null);
 
   /**
    * Latest cursor/month, readable synchronously.
@@ -303,15 +309,8 @@ export default function Home() {
           {mounted && view === "prs" ? (
             <PRList
               entries={prEntries}
-              todayKey={todayKey}
-              onAddPR={(input) => commitPRs(addPREntry(prEntries, input))}
-              onRemovePR={handleRemovePR}
-              onOpenDate={(date) => {
-                setView("calendar");
-                setMonth(startOfMonth(parseDateKey(date)));
-                setCursorDate(date);
-                setDetailDate(date);
-              }}
+              onAddPR={(exerciseName) => setPRSheet({ mode: "add", exerciseName })}
+              onEditPR={(entry) => setPRSheet({ mode: "edit", id: entry.id })}
             />
           ) : mounted ? (
             <Calendar
@@ -343,6 +342,32 @@ export default function Home() {
           </div>
         </div>
       </main>
+
+      {prSheet !== null ? (
+        <PREditSheet
+          entry={prSheet.mode === "edit" ? prEntries.find((e) => e.id === prSheet.id) : undefined}
+          initialExerciseName={prSheet.mode === "add" ? prSheet.exerciseName : undefined}
+          allEntries={prEntries}
+          todayKey={todayKey}
+          onSubmit={(input) => {
+            if (prSheet.mode === "edit") {
+              commitPRs(updatePREntry(prEntries, prSheet.id, input));
+              setPRSheet(null);
+            } else {
+              commitPRs(addPREntry(prEntries, input));
+            }
+          }}
+          onDelete={
+            prSheet.mode === "edit"
+              ? () => {
+                  handleRemovePR(prSheet.id);
+                  setPRSheet(null);
+                }
+              : undefined
+          }
+          onClose={() => setPRSheet(null)}
+        />
+      ) : null}
 
       {themeOpen ? (
         <ThemePicker

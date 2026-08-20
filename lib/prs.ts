@@ -47,6 +47,29 @@ export function addPREntry(entries: PREntry[], input: NewPREntry): PREntry[] {
   return [...entries, entry];
 }
 
+export type PREntryPatch = {
+  exerciseName: string;
+  weight: number;
+  date: DateKey;
+  note?: string;
+};
+
+/** Edits an entry in place, keeping its id so seed identity survives. */
+export function updatePREntry(entries: PREntry[], id: string, patch: PREntryPatch): PREntry[] {
+  const note = patch.note?.trim();
+  return entries.map((entry) =>
+    entry.id === id
+      ? {
+          id: entry.id,
+          exerciseName: patch.exerciseName.trim(),
+          weight: patch.weight,
+          date: patch.date,
+          ...(note ? { note } : {}),
+        }
+      : entry,
+  );
+}
+
 export function removePREntry(entries: PREntry[], id: string): PREntry[] {
   return entries.filter((entry) => entry.id !== id);
 }

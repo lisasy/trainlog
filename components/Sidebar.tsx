@@ -57,8 +57,8 @@ export default function Sidebar({
               view === name ? "bg-fg/10 text-fg" : "text-fg/60 hover:bg-fg/5",
             ].join(" ")}
           >
-            <span className={view === name ? "text-accent" : "text-dim/40"} aria-hidden>
-              ●
+            <span className={view === name ? "" : "opacity-50 grayscale"} aria-hidden>
+              {name === "calendar" ? "📅" : "💥"}
             </span>
             <span className="min-w-0 flex-1 truncate">{name}</span>
           </button>

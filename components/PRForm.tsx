@@ -22,6 +22,12 @@ export type PRFormProps = {
   /** Today, used as the ledger form's default date. */
   todayKey?: DateKey;
   initialExerciseName?: string;
+  initialWeight?: string;
+  initialNote?: string;
+  initialDate?: string;
+  submitLabel?: string;
+  /** Add forms clear for the next entry; edit forms keep what was typed. */
+  resetAfterSubmit?: boolean;
   autoFocus?: boolean;
   onSubmit: (input: PRFormInput) => void;
   onCancel?: () => void;
@@ -35,14 +41,19 @@ export default function PRForm({
   fixedDate,
   todayKey,
   initialExerciseName,
+  initialWeight,
+  initialNote,
+  initialDate,
+  submitLabel = "[ add ]",
+  resetAfterSubmit = true,
   autoFocus,
   onSubmit,
   onCancel,
 }: PRFormProps) {
   const [exerciseName, setExerciseName] = useState(initialExerciseName ?? "");
-  const [weight, setWeight] = useState("");
-  const [note, setNote] = useState("");
-  const [date, setDate] = useState<string>(fixedDate ?? todayKey ?? "");
+  const [weight, setWeight] = useState(initialWeight ?? "");
+  const [note, setNote] = useState(initialNote ?? "");
+  const [date, setDate] = useState<string>(initialDate ?? fixedDate ?? todayKey ?? "");
   const [showSuggestions, setShowSuggestions] = useState(false);
   const nameInput = useRef<HTMLInputElement>(null);
 
@@ -67,11 +78,13 @@ export default function PRForm({
       date: fixedDate ?? date,
       note,
     });
-    setExerciseName("");
-    setWeight("");
-    setNote("");
-    setShowSuggestions(false);
-    nameInput.current?.focus();
+    if (resetAfterSubmit) {
+      setExerciseName("");
+      setWeight("");
+      setNote("");
+      setShowSuggestions(false);
+      nameInput.current?.focus();
+    }
   }
 
   return (
@@ -172,7 +185,7 @@ export default function PRForm({
           disabled={!canAdd}
           className="cursor-pointer border border-border px-2 py-1.5 text-fg hover:border-accent hover:text-accent focus-visible:border-accent focus-visible:outline-none disabled:cursor-not-allowed disabled:border-border disabled:text-dim/50 disabled:hover:text-dim/50"
         >
-          [ add ]
+          {submitLabel}
         </button>
         {onCancel ? (
           <button
