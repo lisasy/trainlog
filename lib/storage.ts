@@ -9,7 +9,7 @@
 const PREFIX = "trainlog:";
 
 /** Every key we persist. Adding one here is the only place it's declared. */
-export type StorageKey = "trainedDays" | "prEntries" | "theme";
+export type StorageKey = "trainedDays" | "prEntries" | "theme" | "prSeedRemoved";
 
 function isBrowser(): boolean {
   return typeof window !== "undefined" && typeof window.localStorage !== "undefined";

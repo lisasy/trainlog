@@ -1,3 +1,4 @@
+import { isSeedId, seedEntries } from "./seed";
 import { read, write } from "./storage";
 import type { DateKey, PREntry } from "./types";
 
@@ -129,3 +130,36 @@ export function groupByExercise(entries: PREntry[]): ExerciseGroup[] {
   });
   return groups;
 }
+
+/**
+ * Ids of seed entries the user has deleted.
+ *
+ * Without these, deleting a seeded PR would be undone the moment the seed ran
+ * again on the next load.
+ */
+export function loadRemovedSeedIds(): string[] {
+  const ids = read<string[]>("prSeedRemoved", []);
+  return Array.isArray(ids) ? ids : [];
+}
+
+export function saveRemovedSeedIds(ids: string[]): void {
+  write("prSeedRemoved", ids);
+}
+
+/**
+ * Adds any seed entry that isn't already present and hasn't been deleted.
+ *
+ * Ids are content-derived, so this is idempotent across reloads and picks up
+ * entries added to the seed file later without touching anything the user
+ * created in the app.
+ */
+export function applySeed(entries: PREntry[], removedIds: readonly string[]): PREntry[] {
+  const present = new Set(entries.map((entry) => entry.id));
+  const removed = new Set(removedIds);
+  const missing = seedEntries().filter(
+    (entry) => !present.has(entry.id) && !removed.has(entry.id),
+  );
+  return missing.length === 0 ? entries : [...entries, ...missing];
+}
+
+export { isSeedId };

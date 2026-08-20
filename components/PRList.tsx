@@ -54,7 +54,7 @@ export default function PRList({ entries, onOpenDate }: PRListProps) {
                     <span className={isCurrent ? "text-logged" : "text-dim/50"} aria-hidden>
                       {isCurrent ? "▪" : " "}
                     </span>
-                    <span className="shrink-0 text-dim">{entry.date}</span>
+                    <span className="shrink-0 text-dim">{entry.date === "" ? "—\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0" : entry.date}</span>
                     <span className={`shrink-0 ${isCurrent ? "text-logged" : "text-fg/70"}`}>
                       {entry.weight}
                     </span>

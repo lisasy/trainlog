@@ -21,11 +21,15 @@ import {
 } from "@/lib/dates";
 import {
   addPREntry,
+  applySeed,
   datesWithPRs as computeDatesWithPRs,
   entriesForDate,
+  isSeedId,
   loadPREntries,
+  loadRemovedSeedIds,
   removePREntry,
   savePREntries,
+  saveRemovedSeedIds,
 } from "@/lib/prs";
 import {
   applyTheme,
@@ -93,7 +97,11 @@ export default function Home() {
     setMonth(startOfMonth(parseDateKey(today)));
     setCursorDate(today);
     setTrainedDays(loadTrainedDays());
-    setPREntries(loadPREntries());
+    // Merge the repo's PR history in, so a fresh browser starts populated and
+    // entries added to lib/seed.ts later show up on the next load.
+    const seeded = applySeed(loadPREntries(), loadRemovedSeedIds());
+    setPREntries(seeded);
+    savePREntries(seeded);
     const storedTheme = loadTheme();
     setTheme(storedTheme);
     // The head script already applied this before paint; re-applying keeps
@@ -321,7 +329,11 @@ export default function Home() {
           onSetAccent={(accent) => commitTheme({ presetId: theme.presetId, ...(accent ? { accent } : {}) })}
           onImported={({ trainedDays: days, prEntries: prs }) => {
             setTrainedDays(days);
-            setPREntries(prs);
+            // An imported backup is authoritative for this device; re-apply
+            // the seed so any newer repo entries are still present.
+            const merged = applySeed(prs, loadRemovedSeedIds());
+            setPREntries(merged);
+            savePREntries(merged);
           }}
           onClose={() => setThemeOpen(false)}
         />
@@ -338,7 +350,13 @@ export default function Home() {
           onAddPR={(input) =>
             commitPRs(addPREntry(prEntries, { ...input, date: detailDate }))
           }
-          onRemovePR={(id) => commitPRs(removePREntry(prEntries, id))}
+          onRemovePR={(id) => {
+            // Tombstone seeded entries, or the seed would resurrect them.
+            if (isSeedId(id)) {
+              saveRemovedSeedIds([...loadRemovedSeedIds(), id]);
+            }
+            commitPRs(removePREntry(prEntries, id));
+          }}
           onClose={() => setDetailDate(null)}
         />
       ) : null}
