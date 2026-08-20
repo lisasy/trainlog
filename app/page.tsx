@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Calendar from "@/components/Calendar";
 import DayDetailSheet from "@/components/DayDetailSheet";
+import PRList from "@/components/PRList";
 import Sidebar from "@/components/Sidebar";
+import StreakBadge from "@/components/StreakBadge";
 import ThemePicker from "@/components/ThemePicker";
 import {
   addMonths,
@@ -36,6 +38,7 @@ import type { DateKey, PREntry, Split, TrainedDaysMap } from "@/lib/types";
 import {
   clearTrainedDay,
   countTrainedByMonth,
+  currentStreakWeeks,
   loadTrainedDays,
   markTrained,
   saveTrainedDays,
@@ -58,6 +61,7 @@ export default function Home() {
   const [theme, setTheme] = useState<ThemeSelection>({ presetId: "zenwritten" });
   const [themeOpen, setThemeOpen] = useState(false);
   const [cursorDate, setCursorDate] = useState<DateKey | null>(null);
+  const [view, setView] = useState<"calendar" | "prs">("calendar");
 
   /**
    * Latest cursor/month, readable synchronously.
@@ -69,6 +73,7 @@ export default function Home() {
    */
   const cursorRef = useRef<DateKey | null>(null);
   const monthRef = useRef<Date>(month);
+  const viewRef = useRef(view);
 
   useEffect(() => {
     cursorRef.current = cursorDate;
@@ -77,6 +82,10 @@ export default function Home() {
   useEffect(() => {
     monthRef.current = month;
   }, [month]);
+
+  useEffect(() => {
+    viewRef.current = view;
+  }, [view]);
 
   useEffect(() => {
     const today = getTodayKey();
@@ -103,6 +112,7 @@ export default function Home() {
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (pickerDate !== null || detailDate !== null || themeOpen) return;
+      if (viewRef.current !== "calendar") return;
       if (event.metaKey || event.ctrlKey || event.altKey) return;
 
       const target = event.target as HTMLElement | null;
@@ -205,6 +215,10 @@ export default function Home() {
     () => monthListDescending(currentMonth, 11, 1, month),
     [currentMonth, month],
   );
+  const streakWeeks = useMemo(
+    () => currentStreakWeeks(trainedDays, todayKey),
+    [trainedDays, todayKey],
+  );
   const monthCount = Object.keys(trainedDays).filter((key) => isSameMonth(key, month)).length;
   const totalTrained = Object.keys(trainedDays).length;
 
@@ -218,6 +232,8 @@ export default function Home() {
         onSelectMonth={setMonth}
         onJumpToToday={jumpToToday}
         onOpenTheme={() => setThemeOpen(true)}
+        view={view}
+        onSelectView={setView}
       />
 
       <main className="flex min-h-dvh min-w-0 flex-1 flex-col px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6">
@@ -237,7 +253,15 @@ export default function Home() {
             />
           </span>
           <span className="flex shrink-0 items-baseline gap-3 text-dim">
-            <span>{mounted ? `${monthCount} trained` : "…"}</span>
+            {mounted ? <StreakBadge weeks={streakWeeks} /> : null}
+            <span className="hidden sm:inline">{mounted ? `${monthCount} trained` : "…"}</span>
+            <button
+              type="button"
+              onClick={() => setView(view === "calendar" ? "prs" : "calendar")}
+              className="cursor-pointer transition-colors hover:text-accent focus-visible:text-accent focus-visible:outline-none lg:hidden"
+            >
+              {view === "calendar" ? "prs" : "calendar"}
+            </button>
             <button
               type="button"
               onClick={() => setThemeOpen(true)}
@@ -249,7 +273,17 @@ export default function Home() {
         </header>
 
         <div className="flex min-h-0 flex-1 flex-col py-3 sm:py-4">
-          {mounted ? (
+          {mounted && view === "prs" ? (
+            <PRList
+              entries={prEntries}
+              onOpenDate={(date) => {
+                setView("calendar");
+                setMonth(startOfMonth(parseDateKey(date)));
+                setCursorDate(date);
+                setDetailDate(date);
+              }}
+            />
+          ) : mounted ? (
             <Calendar
               month={month}
               todayKey={todayKey}

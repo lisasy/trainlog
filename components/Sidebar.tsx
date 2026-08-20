@@ -13,6 +13,8 @@ export type SidebarProps = {
   onSelectMonth: (month: Date) => void;
   onJumpToToday: () => void;
   onOpenTheme: () => void;
+  view: "calendar" | "prs";
+  onSelectView: (view: "calendar" | "prs") => void;
 };
 
 export default function Sidebar({
@@ -23,6 +25,8 @@ export default function Sidebar({
   onSelectMonth,
   onJumpToToday,
   onOpenTheme,
+  view,
+  onSelectView,
 }: SidebarProps) {
   const activeKey = monthKey(activeMonth);
 
@@ -39,7 +43,29 @@ export default function Sidebar({
         />
       </div>
 
-      <nav aria-label="Months" className="min-h-0 flex-1 overflow-y-auto px-1 pt-2 pb-2">
+      <nav aria-label="Views" className="px-1 pt-2">
+        <div className="px-2 pb-1 text-dim">view</div>
+        {(["calendar", "prs"] as const).map((name) => (
+          <button
+            key={name}
+            type="button"
+            onClick={() => onSelectView(name)}
+            aria-current={view === name ? "true" : undefined}
+            className={[
+              "flex w-full cursor-pointer items-baseline gap-2 px-2 py-0.5 text-left transition-colors",
+              "focus-visible:outline-none",
+              view === name ? "bg-fg/10 text-fg" : "text-fg/60 hover:bg-fg/5",
+            ].join(" ")}
+          >
+            <span className={view === name ? "text-accent" : "text-dim/40"} aria-hidden>
+              ●
+            </span>
+            <span className="min-w-0 flex-1 truncate">{name}</span>
+          </button>
+        ))}
+      </nav>
+
+      <nav aria-label="Months" className="min-h-0 flex-1 overflow-y-auto px-1 pt-4 pb-2">
         <div className="flex items-baseline justify-between px-2 pb-1">
           <span className="text-dim">months</span>
           <button
@@ -83,7 +109,7 @@ export default function Sidebar({
       </nav>
 
       <div className="flex items-baseline justify-between border-t border-dotted border-border px-3 py-1 text-dim">
-        <span>local</span>
+        <span>💪 get strong</span>
         <button
           type="button"
           onClick={onOpenTheme}

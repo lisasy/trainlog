@@ -88,3 +88,44 @@ export function suggestExercises(entries: PREntry[], query: string, limit = 5): 
     })
     .slice(0, limit);
 }
+
+export type ExerciseGroup = {
+  exerciseName: string;
+  /** Newest first. */
+  entries: PREntry[];
+  /**
+   * The most recent entry by date — not the heaviest. The source log isn't
+   * strictly increasing, so recomputing a "true max" would show a number the
+   * user doesn't consider current.
+   */
+  current: PREntry;
+};
+
+/**
+ * Groups entries by exercise for the ledger. Names are matched
+ * case-insensitively, and the casing of the most recent entry wins.
+ */
+export function groupByExercise(entries: PREntry[]): ExerciseGroup[] {
+  const byName = new Map<string, PREntry[]>();
+  for (const entry of entries) {
+    const key = entry.exerciseName.trim().toLowerCase();
+    const list = byName.get(key);
+    if (list === undefined) byName.set(key, [entry]);
+    else list.push(entry);
+  }
+
+  const groups: ExerciseGroup[] = [];
+  for (const list of byName.values()) {
+    // Reverse first so that among entries sharing a date, the one added last
+    // sorts as the newer — Array.sort is stable, so it would otherwise keep
+    // insertion order and call the oldest one current.
+    const sorted = [...list].reverse().sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+    groups.push({ exerciseName: sorted[0].exerciseName, entries: sorted, current: sorted[0] });
+  }
+
+  groups.sort((a, b) => {
+    if (a.current.date !== b.current.date) return a.current.date < b.current.date ? 1 : -1;
+    return a.exerciseName.localeCompare(b.exerciseName);
+  });
+  return groups;
+}

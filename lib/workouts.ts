@@ -1,3 +1,4 @@
+import { parseDateKey, shiftDateKey, toDateKey } from "./dates";
 import { read, write } from "./storage";
 import type { DateKey, TrainedDay, TrainedDaysMap } from "./types";
 
@@ -70,4 +71,49 @@ export function setNotes(days: TrainedDaysMap, date: DateKey, notes: string): Tr
   const next: TrainedDay = { ...existing, notes: trimmed === "" ? undefined : trimmed };
   if (next.notes === undefined) delete next.notes;
   return { ...days, [date]: next };
+}
+
+/** The Sunday that starts the week containing `date`, matching the calendar. */
+export function weekStartKey(date: DateKey): DateKey {
+  const parsed = parseDateKey(date);
+  parsed.setDate(parsed.getDate() - parsed.getDay());
+  return toDateKey(parsed);
+}
+
+/**
+ * Current streak: consecutive weeks with at least `threshold` trained days.
+ *
+ * Two deliberate rules:
+ * - Scheduled days in the future never count. Only training that has actually
+ *   happened can extend a streak.
+ * - The in-progress week counts once it qualifies, but not qualifying *yet*
+ *   doesn't break the streak — otherwise every streak would read zero until
+ *   the third session of each week.
+ */
+export function currentStreakWeeks(
+  days: TrainedDaysMap,
+  today: DateKey,
+  threshold = 3,
+): number {
+  if (today === "") return 0;
+
+  const perWeek = new Map<DateKey, number>();
+  for (const date of Object.keys(days)) {
+    if (date > today) continue;
+    const week = weekStartKey(date);
+    perWeek.set(week, (perWeek.get(week) ?? 0) + 1);
+  }
+
+  const qualifies = (week: DateKey) => (perWeek.get(week) ?? 0) >= threshold;
+
+  let streak = 0;
+  let week = weekStartKey(today);
+  if (qualifies(week)) streak += 1;
+
+  week = shiftDateKey(week, -7);
+  while (qualifies(week)) {
+    streak += 1;
+    week = shiftDateKey(week, -7);
+  }
+  return streak;
 }
