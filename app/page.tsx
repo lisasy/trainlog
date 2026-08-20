@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Calendar from "@/components/Calendar";
 import DayDetailSheet from "@/components/DayDetailSheet";
 import Sidebar from "@/components/Sidebar";
@@ -12,6 +12,8 @@ import {
   monthListDescending,
   monthPath,
   parseDateKey,
+  shiftDateKey,
+  shiftMonthKeepDay,
   startOfMonth,
   todayKey as getTodayKey,
 } from "@/lib/dates";
@@ -55,11 +57,32 @@ export default function Home() {
   const [detailDate, setDetailDate] = useState<DateKey | null>(null);
   const [theme, setTheme] = useState<ThemeSelection>({ presetId: "zenwritten" });
   const [themeOpen, setThemeOpen] = useState(false);
+  const [cursorDate, setCursorDate] = useState<DateKey | null>(null);
+
+  /**
+   * Latest cursor/month, readable synchronously.
+   *
+   * The key handler can fire several times before React re-renders (key
+   * repeat, or two fast presses). Reading state through the effect's closure
+   * would make every event in that burst compute from the same stale value and
+   * silently drop all but one, so each event advances these refs immediately.
+   */
+  const cursorRef = useRef<DateKey | null>(null);
+  const monthRef = useRef<Date>(month);
+
+  useEffect(() => {
+    cursorRef.current = cursorDate;
+  }, [cursorDate]);
+
+  useEffect(() => {
+    monthRef.current = month;
+  }, [month]);
 
   useEffect(() => {
     const today = getTodayKey();
     setTodayKey(today);
     setMonth(startOfMonth(parseDateKey(today)));
+    setCursorDate(today);
     setTrainedDays(loadTrainedDays());
     setPREntries(loadPREntries());
     const storedTheme = loadTheme();
@@ -69,6 +92,76 @@ export default function Home() {
     applyTheme(resolveTheme(storedTheme));
     setMounted(true);
   }, []);
+
+  /**
+   * Keyboard navigation. Arrows move by month (left/right) and week (up/down);
+   * h/l step a day within the week, j/k are the vim aliases for up/down.
+   *
+   * Suppressed while any dialog is open or while typing, so the day sheet's
+   * inputs keep their own keys.
+   */
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (pickerDate !== null || detailDate !== null || themeOpen) return;
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+
+      const target = event.target as HTMLElement | null;
+      if (
+        target !== null &&
+        (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)
+      ) {
+        return;
+      }
+
+      const anchor = cursorRef.current ?? todayKey;
+      if (anchor === "") return;
+
+      let nextDate: DateKey | null = null;
+      switch (event.key) {
+        case "ArrowLeft":
+          nextDate = shiftMonthKeepDay(anchor, -1);
+          break;
+        case "ArrowRight":
+          nextDate = shiftMonthKeepDay(anchor, 1);
+          break;
+        case "ArrowUp":
+        case "k":
+          nextDate = shiftDateKey(anchor, -7);
+          break;
+        case "ArrowDown":
+        case "j":
+          nextDate = shiftDateKey(anchor, 7);
+          break;
+        case "h":
+          nextDate = shiftDateKey(anchor, -1);
+          break;
+        case "l":
+          nextDate = shiftDateKey(anchor, 1);
+          break;
+        case "Enter":
+        case " ":
+          event.preventDefault();
+          setPickerDate(anchor);
+          return;
+        default:
+          return;
+      }
+
+      event.preventDefault();
+      cursorRef.current = nextDate;
+      setCursorDate(nextDate);
+
+      // Follow the cursor when it walks off the displayed month.
+      if (!isSameMonth(nextDate, monthRef.current)) {
+        const nextMonth = startOfMonth(parseDateKey(nextDate));
+        monthRef.current = nextMonth;
+        setMonth(nextMonth);
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [detailDate, pickerDate, themeOpen, todayKey]);
 
   const commitDays = useCallback((next: TrainedDaysMap) => {
     setTrainedDays(next);
@@ -163,6 +256,7 @@ export default function Home() {
               trainedDays={trainedDays}
               datesWithPRs={datesWithPRs}
               pickerDate={pickerDate}
+              cursorDate={cursorDate}
               onPrevMonth={() => setMonth((m) => addMonths(m, -1))}
               onNextMonth={() => setMonth((m) => addMonths(m, 1))}
               onJumpToToday={jumpToToday}
@@ -180,7 +274,8 @@ export default function Home() {
         <div className="border-t border-dotted border-border">
           <div className="flex items-baseline justify-between py-1 text-dim">
             <span>{mounted ? `${totalTrained} days logged` : "…"}</span>
-            <span className="hidden sm:inline">tap to mark · hold for details</span>
+            <span className="hidden sm:inline lg:hidden">tap to mark · hold for details</span>
+            <span className="hidden lg:inline">←→ month · ↑↓ week · h l day · enter to mark</span>
           </div>
         </div>
       </main>

@@ -39,6 +39,26 @@ export function todayKey(): DateKey {
   return toDateKey(new Date());
 }
 
+/** Moves a date key by whole days. Handles month and year rollover. */
+export function shiftDateKey(key: DateKey, deltaDays: number): DateKey {
+  const date = parseDateKey(key);
+  date.setDate(date.getDate() + deltaDays);
+  return toDateKey(date);
+}
+
+/**
+ * Moves a date key by whole months, keeping the day of month where possible.
+ * Jan 31 + 1 month lands on Feb 28, not Mar 3 — setMonth would overflow.
+ */
+export function shiftMonthKeepDay(key: DateKey, deltaMonths: number): DateKey {
+  const date = parseDateKey(key);
+  const day = date.getDate();
+  const target = new Date(date.getFullYear(), date.getMonth() + deltaMonths, 1);
+  const lastDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+  target.setDate(Math.min(day, lastDay));
+  return toDateKey(target);
+}
+
 export function startOfMonth(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), 1);
 }

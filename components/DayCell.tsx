@@ -12,6 +12,8 @@ export type DayCellProps = {
   isToday: boolean;
   /** Later than today — marking it is planning ahead, not logging. */
   isFuture: boolean;
+  /** The keyboard cursor is on this day. */
+  isCursor: boolean;
   trainedDay?: TrainedDay;
   hasPRs: boolean;
   isPickerOpen: boolean;
@@ -32,6 +34,7 @@ export default function DayCell({
   inMonth,
   isToday,
   isFuture,
+  isCursor,
   trainedDay,
   hasPRs,
   isPickerOpen,
@@ -83,6 +86,8 @@ export default function DayCell({
         className={[
           "tap-target group flex h-full w-full cursor-pointer flex-col justify-between p-1.5 text-left",
           "transition-colors duration-100 focus-visible:bg-fg/10 focus-visible:outline-none sm:p-2",
+          // outline rather than border: no layout shift as the cursor moves.
+          isCursor ? "outline outline-1 -outline-offset-1 outline-fg/60" : "",
           isTrained ? statusTintClass(isFuture) : "hover:bg-fg/5",
         ].join(" ")}
       >

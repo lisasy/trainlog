@@ -13,6 +13,8 @@ export type CalendarProps = {
   datesWithPRs: ReadonlySet<DateKey>;
   /** Which date's split picker is open, if any. */
   pickerDate: DateKey | null;
+  /** Where the keyboard cursor sits. */
+  cursorDate: DateKey | null;
   onPrevMonth: () => void;
   onNextMonth: () => void;
   onJumpToToday: () => void;
@@ -52,6 +54,7 @@ export default function Calendar({
   trainedDays,
   datesWithPRs,
   pickerDate,
+  cursorDate,
   onPrevMonth,
   onNextMonth,
   onJumpToToday,
@@ -115,6 +118,7 @@ export default function Calendar({
               // YYYY-MM-DD sorts lexicographically, so a string compare is a
               // date compare.
               isFuture={key > todayKey}
+              isCursor={key === cursorDate}
               trainedDay={trainedDays[key]}
               hasPRs={datesWithPRs.has(key)}
               isPickerOpen={pickerDate === key}
