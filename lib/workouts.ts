@@ -1,0 +1,56 @@
+import { read, write } from "./storage";
+import type { DateKey, TrainedDay, TrainedDaysMap } from "./types";
+
+/**
+ * trainedDays CRUD.
+ *
+ * The mutators are pure: they take the current map and return a new one, so
+ * callers stay in control of when state and storage are updated. Persistence
+ * is the explicit `saveTrainedDays` call.
+ */
+
+export function loadTrainedDays(): TrainedDaysMap {
+  return read<TrainedDaysMap>("trainedDays", {});
+}
+
+export function saveTrainedDays(days: TrainedDaysMap): void {
+  write("trainedDays", days);
+}
+
+export function isTrained(days: TrainedDaysMap, date: DateKey): boolean {
+  return date in days;
+}
+
+export function getTrainedDay(days: TrainedDaysMap, date: DateKey): TrainedDay | undefined {
+  return days[date];
+}
+
+/**
+ * One tap = trained/not-trained. Untoggling drops the whole entry, split label
+ * and all — the checkbox habit this mirrors has no "trained but blank" state.
+ */
+export function toggleTrainedDay(days: TrainedDaysMap, date: DateKey): TrainedDaysMap {
+  if (date in days) {
+    const next = { ...days };
+    delete next[date];
+    return next;
+  }
+  return { ...days, [date]: { date } };
+}
+
+/** Marks the day trained if it wasn't already — split implies a session. */
+export function setSplit(days: TrainedDaysMap, date: DateKey, split: string): TrainedDaysMap {
+  const trimmed = split.trim();
+  const existing = days[date] ?? { date };
+  const next: TrainedDay = { ...existing, split: trimmed === "" ? undefined : trimmed };
+  if (next.split === undefined) delete next.split;
+  return { ...days, [date]: next };
+}
+
+export function setNotes(days: TrainedDaysMap, date: DateKey, notes: string): TrainedDaysMap {
+  const trimmed = notes.trim();
+  const existing = days[date] ?? { date };
+  const next: TrainedDay = { ...existing, notes: trimmed === "" ? undefined : trimmed };
+  if (next.notes === undefined) delete next.notes;
+  return { ...days, [date]: next };
+}
