@@ -9,8 +9,14 @@ import type { DateKey } from "./types";
  * Date constructor. Parse explicitly, format explicitly.
  */
 
-/** Monday-first, matching the ISO weeks the streak calc will use later. */
-export const WEEKDAY_LABELS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
+/**
+ * Sunday-first, matching Date.getDay()'s own numbering.
+ *
+ * Note this is the *display* week. The streak rule in the spec is defined on
+ * ISO (Monday-start) weeks, so that calc will need its own boundary rather
+ * than reusing this one.
+ */
+export const WEEKDAY_LABELS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
 
 const MONTH_LABELS = [
   "jan", "feb", "mar", "apr", "may", "jun",
@@ -93,10 +99,8 @@ export function monthListDescending(
 
 /** Long-form label for the day sheet header, e.g. "WED 2026-08-19". */
 export function dayLabel(key: DateKey): string {
-  const date = parseDateKey(key);
-  // getDay() is Sunday-first; shift to our Monday-first labels.
-  const weekday = WEEKDAY_LABELS[(date.getDay() + 6) % 7];
-  return `${weekday} ${key}`;
+  // getDay() is already Sunday-first, matching WEEKDAY_LABELS.
+  return `${WEEKDAY_LABELS[parseDateKey(key).getDay()]} ${key}`;
 }
 
 export function isSameMonth(key: DateKey, month: Date): boolean {
@@ -105,13 +109,13 @@ export function isSameMonth(key: DateKey, month: Date): boolean {
 }
 
 /**
- * Build the calendar grid for `month` as whole Monday-start weeks, padded with
+ * Build the calendar grid for `month` as whole Sunday-start weeks, padded with
  * the adjacent months' days so every row has 7 cells.
  */
 export function buildMonthGrid(month: Date): DateKey[][] {
   const first = startOfMonth(month);
   // How many leading days from the previous month this month's 1st needs.
-  const leading = (first.getDay() + 6) % 7;
+  const leading = first.getDay();
   const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
   const weekCount = Math.ceil((leading + daysInMonth) / 7);
 

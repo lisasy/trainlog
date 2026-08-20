@@ -25,7 +25,7 @@ export default function Sidebar({
   const activeKey = monthKey(activeMonth);
 
   return (
-    <aside className="hidden w-56 shrink-0 flex-col border-r border-dotted border-border pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:flex">
+    <aside className="hidden w-56 shrink-0 flex-col border-r border-dotted border-border pb-[max(0.75rem,env(safe-area-inset-bottom))] text-sm lg:flex">
       {/* h-11 matches the body header exactly, so this bottom border and the
           body's land on the same line. */}
       <div className="flex h-11 shrink-0 items-baseline border-b border-dotted border-border px-3 pt-2">
@@ -43,7 +43,7 @@ export default function Sidebar({
           <button
             type="button"
             onClick={onJumpToToday}
-            className="text-dim transition-colors hover:text-accent focus-visible:text-accent focus-visible:outline-none"
+            className="cursor-pointer text-dim transition-colors hover:text-accent focus-visible:text-accent focus-visible:outline-none"
           >
             today
           </button>
@@ -61,7 +61,7 @@ export default function Sidebar({
               onClick={() => onSelectMonth(month)}
               aria-current={isActive ? "true" : undefined}
               className={[
-                "flex w-full items-baseline gap-2 px-2 py-0.5 text-left transition-colors",
+                "flex w-full cursor-pointer items-baseline gap-2 px-2 py-0.5 text-left transition-colors",
                 "focus-visible:outline-none",
                 isActive ? "bg-fg/10 text-fg" : "text-fg/60 hover:bg-fg/5",
               ].join(" ")}

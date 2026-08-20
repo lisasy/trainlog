@@ -7,16 +7,23 @@
  */
 :root {
   /*
-   * Afterglow (iTerm2-Color-Schemes). Background, foreground and border map
-   * straight to the scheme's Background / Foreground / Selection colors; the
-   * accent is its signature yellow (ansi 3). `--dim` is lifted from the
-   * scheme's ansi 8 (#505050) to stay legible as secondary UI text.
+   * zenwritten-dark (zenbones). bg/fg/border map to the scheme's background,
+   * foreground and ansi 8; the accent is its signature warm yellow (ansi 3).
+   * `--dim` is ansi 8 lifted until it's legible as secondary UI text.
    */
-  --bg: #15161c;
-  --fg: #aeb6c7;
-  --accent: #e57a6a;
-  --dim: #c8bd2e;
-  --border: #303030;
+  --bg: #191919;
+  --fg: #bbbbbb;
+  --accent: #b77e64;
+  --dim: #7d7472;
+  --border: #3d3839;
+
+  /*
+   * Days are colored by *when*, not by what: warm for training already done,
+   * cool for something scheduled ahead. Split type is shown as a label, not
+   * as a color.
+   */
+  --logged: #b77e64;
+  --scheduled: #6099c0;
 }
 
 @theme inline {
@@ -24,6 +31,8 @@
   --color-fg: var(--fg);
   --color-accent: var(--accent);
   --color-dim: var(--dim);
+  --color-logged: var(--logged);
+  --color-scheduled: var(--scheduled);
   --color-border: var(--border);
   --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
 }
@@ -116,6 +125,22 @@ body {
  * Calendar cells are tap targets, not text. Suppresses the iOS text-selection
  * and callout menus that would otherwise fire on the long-press gesture.
  */
+/*
+ * Hover tooltip. Square by design — no border radius anywhere in this UI.
+ * Gated behind `hover: hover` so it never sticks open after a tap on touch,
+ * where :hover latches until you tap elsewhere.
+ */
+.tip {
+  opacity: 0;
+  transition: opacity 90ms linear;
+}
+
+@media (hover: hover) {
+  .group:hover .tip {
+    opacity: 1;
+  }
+}
+
 .tap-target {
   -webkit-touch-callout: none;
   -webkit-user-select: none;

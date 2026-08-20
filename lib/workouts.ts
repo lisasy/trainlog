@@ -36,16 +36,23 @@ export function getTrainedDay(days: TrainedDaysMap, date: DateKey): TrainedDay |
 }
 
 /**
- * One tap = trained/not-trained. Untoggling drops the whole entry, split label
- * and all — the checkbox habit this mirrors has no "trained but blank" state.
+ * Marks a day trained with a split, or changes the split of a day that's
+ * already marked. Any notes already on the day survive.
  */
-export function toggleTrainedDay(days: TrainedDaysMap, date: DateKey): TrainedDaysMap {
-  if (date in days) {
-    const next = { ...days };
-    delete next[date];
-    return next;
-  }
-  return { ...days, [date]: { date } };
+export function markTrained(days: TrainedDaysMap, date: DateKey, split: string): TrainedDaysMap {
+  const existing = days[date] ?? { date };
+  return { ...days, [date]: { ...existing, date, split } };
+}
+
+/**
+ * Unmarks a day, dropping the whole entry — split and all. The checkbox habit
+ * this mirrors has no "trained but blank" state.
+ */
+export function clearTrainedDay(days: TrainedDaysMap, date: DateKey): TrainedDaysMap {
+  if (!(date in days)) return days;
+  const next = { ...days };
+  delete next[date];
+  return next;
 }
 
 /** Marks the day trained if it wasn't already — split implies a session. */

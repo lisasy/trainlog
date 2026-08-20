@@ -1,18 +1,26 @@
 "use client";
 
 import { buildMonthGrid, isSameMonth, monthLabel, parseDateKey, WEEKDAY_LABELS } from "@/lib/dates";
-import type { DateKey, TrainedDaysMap } from "@/lib/types";
+import type { DateKey, Split, TrainedDaysMap } from "@/lib/types";
+import DayCell from "./DayCell";
 
 export type CalendarProps = {
   /** Any date inside the month being displayed. */
   month: Date;
   todayKey: DateKey;
   trainedDays: TrainedDaysMap;
+  /** Dates with at least one PR attached. */
+  datesWithPRs: ReadonlySet<DateKey>;
+  /** Which date's split picker is open, if any. */
+  pickerDate: DateKey | null;
   onPrevMonth: () => void;
   onNextMonth: () => void;
   onJumpToToday: () => void;
-  /** One tap = trained/not-trained. Kept deliberately cheap. */
-  onToggleDay: (date: DateKey) => void;
+  onOpenPicker: (date: DateKey) => void;
+  onClosePicker: () => void;
+  onMarkDay: (date: DateKey, split: Split) => void;
+  onClearDay: (date: DateKey) => void;
+  onOpenDetail: (date: DateKey) => void;
 };
 
 function BracketButton({
@@ -29,7 +37,7 @@ function BracketButton({
       type="button"
       onClick={onClick}
       aria-label={ariaLabel}
-      className="tap-target inline-flex h-11 items-center text-dim transition-colors hover:text-accent focus-visible:text-accent focus-visible:outline-none"
+      className="tap-target inline-flex h-11 cursor-pointer items-center text-dim transition-colors hover:text-accent focus-visible:text-accent focus-visible:outline-none"
     >
       <span aria-hidden>[</span>
       <span className="px-1.5">{label}</span>
@@ -42,12 +50,19 @@ export default function Calendar({
   month,
   todayKey,
   trainedDays,
+  datesWithPRs,
+  pickerDate,
   onPrevMonth,
   onNextMonth,
   onJumpToToday,
-  onToggleDay,
+  onOpenPicker,
+  onClosePicker,
+  onMarkDay,
+  onClearDay,
+  onOpenDetail,
 }: CalendarProps) {
   const days = buildMonthGrid(month).flat();
+  const rowCount = days.length / 7;
 
   return (
     <section aria-label="Training calendar" className="flex min-h-0 flex-1 flex-col">
@@ -76,7 +91,7 @@ export default function Calendar({
           <div
             key={day}
             className={[
-              "min-w-0 truncate border-b border-dotted border-border px-1.5 py-1 text-dim sm:px-2",
+              "min-w-0 truncate border-b border-dotted border-border px-1.5 py-1 text-sm text-dim sm:px-2",
               index === 6 ? "" : "border-r border-dotted border-border",
             ].join(" ")}
           >
@@ -87,73 +102,33 @@ export default function Calendar({
 
       <div className="grid flex-1 auto-rows-fr grid-cols-7">
         {days.map((key, index) => {
-          const isLastColumn = index % 7 === 6;
-          const isLastRow = index >= days.length - 7;
-          const inMonth = isSameMonth(key, month);
-          const trained = key in trainedDays;
-          const isToday = key === todayKey;
-          const split = trainedDays[key]?.split;
-          const dayNumber = String(parseDateKey(key).getDate()).padStart(2, "0");
-
-          // min-h keeps rows touch-sized on phones; auto-rows-fr on the grid
-          // lets them grow past it to fill a desktop viewport.
-          const cellShape = [
-            "flex min-h-14 min-w-0 flex-col justify-between p-1.5 text-left sm:min-h-20 sm:p-2",
-            isLastColumn ? "" : "border-r border-dotted border-border",
-            isLastRow ? "" : "border-b border-dotted border-border",
-          ].join(" ");
-
-          if (!inMonth) {
-            // Adjacent-month padding: keeps the table rectangular, but isn't
-            // tappable, so an edge mis-tap can't log a day you can't see.
-            return (
-              <div key={key} aria-hidden className={`${cellShape} text-dim/30`}>
-                <span>{dayNumber}</span>
-              </div>
-            );
-          }
+          const column = index % 7;
+          const row = Math.floor(index / 7);
 
           return (
-            <button
+            <DayCell
               key={key}
-              type="button"
-              onClick={() => onToggleDay(key)}
-              aria-pressed={trained}
-              aria-label={`${key}${isToday ? " (today)" : ""}, ${trained ? "trained" : "not trained"}`}
-              className={[
-                "tap-target transition-colors duration-100",
-                cellShape,
-                "focus-visible:outline-none focus-visible:bg-fg/10",
-                trained ? "bg-accent/10 hover:bg-accent/15" : "hover:bg-fg/5",
-              ].join(" ")}
-            >
-              <span className="flex w-full items-start justify-between gap-1">
-                {/*
-                 * Today is drawn as an inverted block — a terminal marks its
-                 * cursor position by reversing the cell, not by outlining it.
-                 */}
-                <span
-                  className={
-                    isToday
-                      ? "bg-accent px-1 text-bg"
-                      : trained
-                        ? "text-accent glow"
-                        : "text-fg/55"
-                  }
-                >
-                  {dayNumber}
-                </span>
-                {trained ? (
-                  <span className="text-accent glow" aria-hidden>
-                    ▪
-                  </span>
-                ) : null}
-              </span>
-
-              {split ? (
-                <span className="hidden w-full truncate text-dim sm:block">{split}</span>
-              ) : null}
-            </button>
+              date={key}
+              dayNumber={String(parseDateKey(key).getDate()).padStart(2, "0")}
+              inMonth={isSameMonth(key, month)}
+              isToday={key === todayKey}
+              // YYYY-MM-DD sorts lexicographically, so a string compare is a
+              // date compare.
+              isFuture={key > todayKey}
+              trainedDay={trainedDays[key]}
+              hasPRs={datesWithPRs.has(key)}
+              isPickerOpen={pickerDate === key}
+              isLastColumn={column === 6}
+              isLastRow={row === rowCount - 1}
+              // Popovers near the bottom or right edge open the other way.
+              flipUp={row >= rowCount - 2}
+              alignRight={column >= 5}
+              onOpenPicker={onOpenPicker}
+              onClosePicker={onClosePicker}
+              onMarkDay={onMarkDay}
+              onClearDay={onClearDay}
+              onOpenDetail={onOpenDetail}
+            />
           );
         })}
       </div>

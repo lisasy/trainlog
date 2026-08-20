@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Calendar from "@/components/Calendar";
+import DayDetailSheet from "@/components/DayDetailSheet";
 import Sidebar from "@/components/Sidebar";
 import {
   addMonths,
@@ -13,12 +14,21 @@ import {
   startOfMonth,
   todayKey as getTodayKey,
 } from "@/lib/dates";
-import type { DateKey, TrainedDaysMap } from "@/lib/types";
 import {
+  addPREntry,
+  datesWithPRs as computeDatesWithPRs,
+  entriesForDate,
+  loadPREntries,
+  removePREntry,
+  savePREntries,
+} from "@/lib/prs";
+import type { DateKey, PREntry, Split, TrainedDaysMap } from "@/lib/types";
+import {
+  clearTrainedDay,
   countTrainedByMonth,
   loadTrainedDays,
+  markTrained,
   saveTrainedDays,
-  toggleTrainedDay,
 } from "@/lib/workouts";
 
 export default function Home() {
@@ -30,21 +40,44 @@ export default function Home() {
    */
   const [mounted, setMounted] = useState(false);
   const [trainedDays, setTrainedDays] = useState<TrainedDaysMap>({});
+  const [prEntries, setPREntries] = useState<PREntry[]>([]);
   const [todayKey, setTodayKey] = useState<DateKey>("");
   const [month, setMonth] = useState<Date>(() => new Date());
+  const [pickerDate, setPickerDate] = useState<DateKey | null>(null);
+  const [detailDate, setDetailDate] = useState<DateKey | null>(null);
 
   useEffect(() => {
     const today = getTodayKey();
     setTodayKey(today);
     setMonth(startOfMonth(parseDateKey(today)));
     setTrainedDays(loadTrainedDays());
+    setPREntries(loadPREntries());
     setMounted(true);
   }, []);
 
-  function handleToggleDay(date: DateKey) {
-    const next = toggleTrainedDay(trainedDays, date);
+  const commitDays = useCallback((next: TrainedDaysMap) => {
     setTrainedDays(next);
     saveTrainedDays(next);
+  }, []);
+
+  const commitPRs = useCallback((next: PREntry[]) => {
+    setPREntries(next);
+    savePREntries(next);
+  }, []);
+
+  function handleMarkDay(date: DateKey, split: Split) {
+    commitDays(markTrained(trainedDays, date, split));
+    setPickerDate(null);
+  }
+
+  function handleClearDay(date: DateKey) {
+    commitDays(clearTrainedDay(trainedDays, date));
+    setPickerDate(null);
+  }
+
+  function handleOpenDetail(date: DateKey) {
+    setPickerDate(null);
+    setDetailDate(date);
   }
 
   function jumpToToday() {
@@ -52,6 +85,7 @@ export default function Home() {
   }
 
   const countsByMonth = useMemo(() => countTrainedByMonth(trainedDays), [trainedDays]);
+  const datesWithPRs = useMemo(() => computeDatesWithPRs(prEntries), [prEntries]);
   const currentMonth = mounted ? startOfMonth(parseDateKey(todayKey)) : month;
   const months = useMemo(
     () => monthListDescending(currentMonth, 11, 1, month),
@@ -96,10 +130,16 @@ export default function Home() {
               month={month}
               todayKey={todayKey}
               trainedDays={trainedDays}
+              datesWithPRs={datesWithPRs}
+              pickerDate={pickerDate}
               onPrevMonth={() => setMonth((m) => addMonths(m, -1))}
               onNextMonth={() => setMonth((m) => addMonths(m, 1))}
               onJumpToToday={jumpToToday}
-              onToggleDay={handleToggleDay}
+              onOpenPicker={setPickerDate}
+              onClosePicker={() => setPickerDate(null)}
+              onMarkDay={handleMarkDay}
+              onClearDay={handleClearDay}
+              onOpenDetail={handleOpenDetail}
             />
           ) : (
             <p className="text-dim">loading…</p>
@@ -109,10 +149,26 @@ export default function Home() {
         <div className="border-t border-dotted border-border">
           <div className="flex items-baseline justify-between py-1 text-dim">
             <span>{mounted ? `${totalTrained} days logged` : "…"}</span>
-            <span className="hidden sm:inline">tap a day to log it</span>
+            <span className="hidden sm:inline">tap to mark · hold for details</span>
           </div>
         </div>
       </main>
+
+      {detailDate !== null ? (
+        <DayDetailSheet
+          date={detailDate}
+          trainedDay={trainedDays[detailDate]}
+          entries={entriesForDate(prEntries, detailDate)}
+          allEntries={prEntries}
+          onSelectSplit={(split) => commitDays(markTrained(trainedDays, detailDate, split))}
+          onClearDay={() => commitDays(clearTrainedDay(trainedDays, detailDate))}
+          onAddPR={(input) =>
+            commitPRs(addPREntry(prEntries, { ...input, date: detailDate }))
+          }
+          onRemovePR={(id) => commitPRs(removePREntry(prEntries, id))}
+          onClose={() => setDetailDate(null)}
+        />
+      ) : null}
     </div>
   );
 }
