@@ -10,11 +10,11 @@ import type { DateKey } from "./types";
  */
 
 /** Monday-first, matching the ISO weeks the streak calc will use later. */
-export const WEEKDAY_LABELS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"] as const;
+export const WEEKDAY_LABELS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
 
 const MONTH_LABELS = [
-  "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
-  "JUL", "AUG", "SEP", "OCT", "NOV", "DEC",
+  "jan", "feb", "mar", "apr", "may", "jun",
+  "jul", "aug", "sep", "oct", "nov", "dec",
 ] as const;
 
 export function toDateKey(date: Date): DateKey {
@@ -41,9 +41,54 @@ export function addMonths(date: Date, delta: number): Date {
   return new Date(date.getFullYear(), date.getMonth() + delta, 1);
 }
 
-/** e.g. "2026 / AUG" — bracketed by the caller for the terminal look. */
+/** e.g. "2026 / aug" — bracketed by the caller for the terminal look. */
 export function monthLabel(date: Date): string {
   return `${date.getFullYear()} / ${MONTH_LABELS[date.getMonth()]}`;
+}
+
+/** e.g. "aug 2026" — reads better in a narrow sidebar list. */
+export function monthNameYear(date: Date): string {
+  return `${MONTH_LABELS[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+/** e.g. "2026/aug" — for the shell-style path in the header. */
+export function monthPath(date: Date): string {
+  return `${date.getFullYear()}/${MONTH_LABELS[date.getMonth()]}`;
+}
+
+/** e.g. "2026-08" — the key `countTrainedByMonth` groups on. */
+export function monthKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+/** Months since year 0 — lets us step and compare months as plain integers. */
+function monthIndex(date: Date): number {
+  return date.getFullYear() * 12 + date.getMonth();
+}
+
+/**
+ * The sidebar's month list, newest first.
+ *
+ * Anchored on the current month rather than the displayed one, so the list
+ * doesn't shift under you as you page around. `mustInclude` widens the range
+ * when you've navigated outside it, guaranteeing the active month is present.
+ */
+export function monthListDescending(
+  anchor: Date,
+  back: number,
+  forward: number,
+  mustInclude: Date,
+): Date[] {
+  const anchorIndex = monthIndex(anchor);
+  const includeIndex = monthIndex(mustInclude);
+  const high = Math.max(anchorIndex + forward, includeIndex);
+  const low = Math.min(anchorIndex - back, includeIndex);
+
+  const months: Date[] = [];
+  for (let i = high; i >= low; i -= 1) {
+    months.push(new Date(Math.floor(i / 12), i % 12, 1));
+  }
+  return months;
 }
 
 /** Long-form label for the day sheet header, e.g. "WED 2026-08-19". */

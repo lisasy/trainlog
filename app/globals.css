@@ -6,11 +6,17 @@
  * Default preset: amber.
  */
 :root {
-  --bg: #0d0b06;
-  --fg: #e8c98d;
-  --accent: #ffb000;
-  --dim: #6e5f42;
-  --border: #2c2417;
+  /*
+   * Afterglow (iTerm2-Color-Schemes). Background, foreground and border map
+   * straight to the scheme's Background / Foreground / Selection colors; the
+   * accent is its signature yellow (ansi 3). `--dim` is lifted from the
+   * scheme's ansi 8 (#505050) to stay legible as secondary UI text.
+   */
+  --bg: #212121;
+  --fg: #d0d0d0;
+  --accent: #e5b567;
+  --dim: #7a7a7a;
+  --border: #303030;
 }
 
 @theme inline {
@@ -28,13 +34,38 @@ html {
   overscroll-behavior: none;
 }
 
+/**
+ * One type size for the entire app — the single strongest thing that makes
+ * this read as a terminal rather than a styled web page. A real terminal has
+ * exactly one cell size; hierarchy comes from color and position, never from
+ * font-size or weight. Nothing below should override this.
+ *
+ * It steps up at wider viewports because the whole view scales, not because
+ * any one element is more important than another.
+ */
 body {
   background: var(--bg);
   color: var(--fg);
   font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  /* Terminals have a fixed advance width. No tracking, anywhere. */
+  letter-spacing: 0;
   -webkit-font-smoothing: antialiased;
   /* Never let a wide element create a horizontal scrollbar on mobile. */
   overflow-x: hidden;
+}
+
+@media (min-width: 640px) {
+  body {
+    font-size: 14px;
+  }
+}
+
+@media (min-width: 1024px) {
+  body {
+    font-size: 16px;
+  }
 }
 
 /* Terminal cursor block next to the title. */

@@ -17,6 +17,16 @@ export function saveTrainedDays(days: TrainedDaysMap): void {
   write("trainedDays", days);
 }
 
+/** Trained-day totals keyed by "YYYY-MM", for the sidebar's month list. */
+export function countTrainedByMonth(days: TrainedDaysMap): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const date of Object.keys(days)) {
+    const month = date.slice(0, 7);
+    counts[month] = (counts[month] ?? 0) + 1;
+  }
+  return counts;
+}
+
 export function isTrained(days: TrainedDaysMap, date: DateKey): boolean {
   return date in days;
 }

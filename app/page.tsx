@@ -1,10 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Calendar from "@/components/Calendar";
-import { addMonths, parseDateKey, startOfMonth, todayKey as getTodayKey } from "@/lib/dates";
+import Rule from "@/components/Rule";
+import Sidebar from "@/components/Sidebar";
+import {
+  addMonths,
+  isSameMonth,
+  monthKey,
+  monthListDescending,
+  monthPath,
+  parseDateKey,
+  startOfMonth,
+  todayKey as getTodayKey,
+} from "@/lib/dates";
 import type { DateKey, TrainedDaysMap } from "@/lib/types";
-import { loadTrainedDays, saveTrainedDays, toggleTrainedDay } from "@/lib/workouts";
+import {
+  countTrainedByMonth,
+  loadTrainedDays,
+  saveTrainedDays,
+  toggleTrainedDay,
+} from "@/lib/workouts";
 
 export default function Home() {
   /**
@@ -32,29 +48,73 @@ export default function Home() {
     saveTrainedDays(next);
   }
 
-  return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-[26rem] flex-col px-4 pt-8 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-      <header className="mb-6 flex items-baseline gap-2">
-        <span className="text-dim" aria-hidden>
-          &gt;
-        </span>
-        <h1 className="text-[15px] tracking-[0.25em] text-accent glow">trainlog</h1>
-        <span className="cursor-block ml-0.5 inline-block h-[0.9em] w-[0.5em] bg-accent" aria-hidden />
-      </header>
+  function jumpToToday() {
+    setMonth(startOfMonth(parseDateKey(getTodayKey())));
+  }
 
-      {mounted ? (
-        <Calendar
-          month={month}
-          todayKey={todayKey}
-          trainedDays={trainedDays}
-          onPrevMonth={() => setMonth((m) => addMonths(m, -1))}
-          onNextMonth={() => setMonth((m) => addMonths(m, 1))}
-          onJumpToToday={() => setMonth(startOfMonth(parseDateKey(getTodayKey())))}
-          onToggleDay={handleToggleDay}
-        />
-      ) : (
-        <p className="text-[13px] text-dim">loading…</p>
-      )}
-    </main>
+  const countsByMonth = useMemo(() => countTrainedByMonth(trainedDays), [trainedDays]);
+  const currentMonth = mounted ? startOfMonth(parseDateKey(todayKey)) : month;
+  const months = useMemo(
+    () => monthListDescending(currentMonth, 11, 1, month),
+    [currentMonth, month],
+  );
+  const monthCount = Object.keys(trainedDays).filter((key) => isSameMonth(key, month)).length;
+  const totalTrained = Object.keys(trainedDays).length;
+
+  return (
+    <div className="flex min-h-dvh w-full">
+      <Sidebar
+        months={months}
+        activeMonth={month}
+        countsByMonth={countsByMonth}
+        currentMonthKey={monthKey(currentMonth)}
+        onSelectMonth={setMonth}
+        onJumpToToday={jumpToToday}
+      />
+
+      <main className="flex min-h-dvh min-w-0 flex-1 flex-col px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6">
+        <header className="flex h-11 shrink-0 items-baseline justify-between gap-3 pt-2">
+          <span className="flex min-w-0 items-baseline">
+            <span className="text-dim">&gt;&nbsp;</span>
+            {/* The title lives in the sidebar once there is one; on phones the
+                header carries it instead. */}
+            <span className="text-accent glow lg:hidden">trainlog</span>
+            <span className="hidden text-dim lg:inline">~/trainlog/</span>
+            <span className="hidden text-accent glow lg:inline">{monthPath(month)}</span>
+            <span
+              className="cursor-block ml-1.5 inline-block h-[0.95em] w-[0.55em] translate-y-[0.1em] bg-accent"
+              aria-hidden
+            />
+          </span>
+          <span className="shrink-0 text-dim">{mounted ? `${monthCount} trained` : "…"}</span>
+        </header>
+
+        <Rule />
+
+        <div className="flex min-h-0 flex-1 flex-col py-3 sm:py-4">
+          {mounted ? (
+            <Calendar
+              month={month}
+              todayKey={todayKey}
+              trainedDays={trainedDays}
+              onPrevMonth={() => setMonth((m) => addMonths(m, -1))}
+              onNextMonth={() => setMonth((m) => addMonths(m, 1))}
+              onJumpToToday={jumpToToday}
+              onToggleDay={handleToggleDay}
+            />
+          ) : (
+            <p className="text-dim">loading…</p>
+          )}
+        </div>
+
+        <div>
+          <Rule />
+          <div className="flex items-baseline justify-between py-1 text-dim">
+            <span>{mounted ? `${totalTrained} days logged` : "…"}</span>
+            <span className="hidden sm:inline">tap a day to log it</span>
+          </div>
+        </div>
+      </main>
+    </div>
   );
 }
