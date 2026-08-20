@@ -212,6 +212,14 @@ export default function Home() {
     saveTheme(next);
   }
 
+  function handleRemovePR(id: string) {
+    // Tombstone seeded entries, or the seed would resurrect them next load.
+    if (isSeedId(id)) {
+      saveRemovedSeedIds([...loadRemovedSeedIds(), id]);
+    }
+    commitPRs(removePREntry(prEntries, id));
+  }
+
   function jumpToToday() {
     setMonth(startOfMonth(parseDateKey(getTodayKey())));
   }
@@ -284,6 +292,9 @@ export default function Home() {
           {mounted && view === "prs" ? (
             <PRList
               entries={prEntries}
+              todayKey={todayKey}
+              onAddPR={(input) => commitPRs(addPREntry(prEntries, input))}
+              onRemovePR={handleRemovePR}
               onOpenDate={(date) => {
                 setView("calendar");
                 setMonth(startOfMonth(parseDateKey(date)));
@@ -350,13 +361,7 @@ export default function Home() {
           onAddPR={(input) =>
             commitPRs(addPREntry(prEntries, { ...input, date: detailDate }))
           }
-          onRemovePR={(id) => {
-            // Tombstone seeded entries, or the seed would resurrect them.
-            if (isSeedId(id)) {
-              saveRemovedSeedIds([...loadRemovedSeedIds(), id]);
-            }
-            commitPRs(removePREntry(prEntries, id));
-          }}
+          onRemovePR={handleRemovePR}
           onClose={() => setDetailDate(null)}
         />
       ) : null}
