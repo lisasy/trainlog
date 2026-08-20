@@ -91,15 +91,98 @@ export function isSeedId(id: string): boolean {
 }
 
 /**
- * Training days from the source log, keyed by date.
+ * Training days, transcribed from the "Gym" checkbox in the source task app.
  *
- * Seeded the same way the PRs are: additive only. A day already in storage
- * keeps whatever split it has, so changing one in the app is never overwritten.
+ * The value is the split, or "" where the source only recorded that training
+ * happened. Seeded additively like the PRs: a day already in storage keeps
+ * whatever split it has, so editing one in the app is never overwritten.
  */
 export const TRAINED_SEED: Record<string, string> = {
+  // March is only partly visible in the source (it appears as trailing days
+  // of the April view), so these two are all that's known for that month.
+  "2026-03-29": "",
+  "2026-03-31": "",
+
+  "2026-04-01": "",
+  "2026-04-04": "",
+  "2026-04-05": "",
+  "2026-04-07": "",
+  "2026-04-08": "",
+  "2026-04-09": "",
+  "2026-04-12": "",
+  "2026-04-14": "",
+  "2026-04-15": "",
+  "2026-04-16": "",
+  "2026-04-17": "",
+  "2026-04-18": "",
+  "2026-04-22": "",
+  "2026-04-23": "",
+  "2026-04-25": "",
+  "2026-04-27": "",
+  "2026-04-29": "",
+
+  "2026-05-01": "",
+  "2026-05-03": "",
+  "2026-05-05": "",
+  "2026-05-06": "",
+  "2026-05-08": "",
+  "2026-05-10": "",
+  "2026-05-11": "",
+  "2026-05-12": "",
+  "2026-05-14": "",
+  "2026-05-16": "",
+  "2026-05-18": "",
+  "2026-05-21": "",
+  "2026-05-22": "",
+  "2026-05-23": "",
+  "2026-05-25": "",
+  "2026-05-29": "",
+  "2026-05-30": "",
+
+  "2026-06-01": "",
+  "2026-06-02": "",
+  "2026-06-03": "",
+  "2026-06-05": "",
+  "2026-06-07": "",
+  "2026-06-08": "",
+  "2026-06-10": "",
+  "2026-06-12": "",
+  "2026-06-13": "",
+  "2026-06-14": "",
+  "2026-06-16": "",
+  "2026-06-18": "",
+  "2026-06-23": "",
+  "2026-06-24": "",
+  "2026-06-27": "",
+  "2026-06-30": "",
+
+  "2026-07-01": "",
+  "2026-07-03": "",
+  "2026-07-04": "",
+  "2026-07-06": "",
+  "2026-07-07": "",
+  "2026-07-09": "",
+  "2026-07-11": "",
+  "2026-07-13": "",
+  "2026-07-14": "",
+  "2026-07-16": "",
+  "2026-07-17": "",
+  "2026-07-20": "",
+  "2026-07-22": "",
+  "2026-07-24": "",
+  "2026-07-27": "",
+  "2026-07-28": "",
+  "2026-07-30": "",
+
+  "2026-08-01": "",
+  "2026-08-03": "",
+  "2026-08-05": "",
+  "2026-08-06": "",
   "2026-08-09": "pull",
   "2026-08-10": "lower",
-  "2026-08-11": "push",
+  // The task app marks the 12th, not the 11th; the "push" split was entered
+  // against the 11th in trainlog. Treated as the same session, moved here.
+  "2026-08-12": "push",
   "2026-08-17": "pull",
   "2026-08-18": "lower",
 
@@ -114,7 +197,8 @@ export const TRAINED_SEED: Record<string, string> = {
 export function seedTrainedDays(): TrainedDaysMap {
   const days: TrainedDaysMap = {};
   for (const [date, split] of Object.entries(TRAINED_SEED)) {
-    days[date] = { date, split };
+    // The source only records that training happened on most of these days.
+    days[date] = split === "" ? { date } : { date, split };
   }
   return days;
 }
