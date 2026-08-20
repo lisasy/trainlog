@@ -12,10 +12,10 @@
    * accent is its signature yellow (ansi 3). `--dim` is lifted from the
    * scheme's ansi 8 (#505050) to stay legible as secondary UI text.
    */
-  --bg: #212121;
-  --fg: #d0d0d0;
-  --accent: #e5b567;
-  --dim: #7a7a7a;
+  --bg: #15161c;
+  --fg: #aeb6c7;
+  --accent: #e57a6a;
+  --dim: #c8bd2e;
   --border: #303030;
 }
 
@@ -51,7 +51,7 @@ body {
    * One size at every viewport. 16px also keeps iOS from zooming the page
    * when a text input takes focus, which matters once the day sheet lands.
    */
-  font-size: 1rem;
+  font-size: 0.85rem;
   font-weight: 600;
   line-height: 1.5;
   /* Terminals have a fixed advance width. No tracking, anywhere. */

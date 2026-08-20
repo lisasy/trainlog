@@ -9,9 +9,23 @@
 /** A date in local-time `YYYY-MM-DD` form. Never an ISO timestamp. */
 export type DateKey = string;
 
+/**
+ * The split options offered when marking a day.
+ *
+ * `TrainedDay.split` stays a plain string so anything already in storage
+ * still loads, but the UI only ever writes one of these.
+ */
+export const SPLITS = ["pull", "push", "core", "lower"] as const;
+
+export type Split = (typeof SPLITS)[number];
+
+export function isSplit(value: string | undefined): value is Split {
+  return value !== undefined && (SPLITS as readonly string[]).includes(value);
+}
+
 export type TrainedDay = {
   date: DateKey;
-  /** Optional freeform label, e.g. "push", "legs". */
+  /** One of SPLITS when set through the UI; freeform for anything older. */
   split?: string;
   notes?: string;
 };
