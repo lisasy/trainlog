@@ -25,10 +25,10 @@ export default function Sidebar({
   const activeKey = monthKey(activeMonth);
 
   return (
-    <aside className="hidden w-56 shrink-0 flex-col border-r border-border pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:flex">
+    <aside className="hidden w-56 shrink-0 flex-col border-r border-dotted border-border pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:flex">
       {/* h-11 matches the body header exactly, so this bottom border and the
-          body's rule land on the same line. */}
-      <div className="flex h-11 shrink-0 items-baseline border-b border-border px-3 pt-2">
+          body's land on the same line. */}
+      <div className="flex h-11 shrink-0 items-baseline border-b border-dotted border-border px-3 pt-2">
         <span className="text-dim">&gt;&nbsp;</span>
         <span className="text-accent glow">trainlog</span>
         <span
@@ -74,13 +74,13 @@ export default function Sidebar({
                 {monthNameYear(month)}
                 {key === currentMonthKey ? <span className="text-dim">&nbsp;·</span> : null}
               </span>
-              <span className="text-dim">{count > 0 ? count : "—"}</span>
+              <span className="text-dim">{count > 0 ? count : "~"}</span>
             </button>
           );
         })}
       </nav>
 
-      <div className="flex items-baseline justify-between border-t border-border px-3 py-1 text-dim">
+      <div className="flex items-baseline justify-between border-t border-dotted border-border px-3 py-1 text-dim">
         <span>local</span>
         <span>v0.1</span>
       </div>

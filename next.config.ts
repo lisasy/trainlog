@@ -8,6 +8,10 @@ const nextConfig: NextConfig = {
    * directory so builds can be verified without restarting dev.
    */
   distDir: process.env.NEXT_DIST_DIR ?? ".next",
+
+  // The dev badge sits over the sidebar's bottom-left corner, which is where
+  // the status line lives. Nothing here needs it.
+  devIndicators: false,
 };
 
 export default nextConfig;

@@ -47,25 +47,18 @@ body {
   background: var(--bg);
   color: var(--fg);
   font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
-  font-size: 13px;
+  /*
+   * One size at every viewport. 16px also keeps iOS from zooming the page
+   * when a text input takes focus, which matters once the day sheet lands.
+   */
+  font-size: 1rem;
+  font-weight: 600;
   line-height: 1.5;
   /* Terminals have a fixed advance width. No tracking, anywhere. */
   letter-spacing: 0;
   -webkit-font-smoothing: antialiased;
   /* Never let a wide element create a horizontal scrollbar on mobile. */
   overflow-x: hidden;
-}
-
-@media (min-width: 640px) {
-  body {
-    font-size: 14px;
-  }
-}
-
-@media (min-width: 1024px) {
-  body {
-    font-size: 16px;
-  }
 }
 
 /* Terminal cursor block next to the title. */

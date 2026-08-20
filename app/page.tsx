@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Calendar from "@/components/Calendar";
-import Rule from "@/components/Rule";
 import Sidebar from "@/components/Sidebar";
 import {
   addMonths,
@@ -73,7 +72,9 @@ export default function Home() {
       />
 
       <main className="flex min-h-dvh min-w-0 flex-1 flex-col px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6">
-        <header className="flex h-11 shrink-0 items-baseline justify-between gap-3 pt-2">
+        {/* h-11 + a dotted bottom border, identical to the sidebar's title bar,
+            so the two chrome rules read as one line across the whole top. */}
+        <header className="flex h-11 shrink-0 items-baseline justify-between gap-3 border-b border-dotted border-border pt-2">
           <span className="flex min-w-0 items-baseline">
             <span className="text-dim">&gt;&nbsp;</span>
             {/* The title lives in the sidebar once there is one; on phones the
@@ -88,8 +89,6 @@ export default function Home() {
           </span>
           <span className="shrink-0 text-dim">{mounted ? `${monthCount} trained` : "…"}</span>
         </header>
-
-        <Rule />
 
         <div className="flex min-h-0 flex-1 flex-col py-3 sm:py-4">
           {mounted ? (
@@ -107,8 +106,7 @@ export default function Home() {
           )}
         </div>
 
-        <div>
-          <Rule />
+        <div className="border-t border-dotted border-border">
           <div className="flex items-baseline justify-between py-1 text-dim">
             <span>{mounted ? `${totalTrained} days logged` : "…"}</span>
             <span className="hidden sm:inline">tap a day to log it</span>

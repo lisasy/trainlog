@@ -63,24 +63,32 @@ export default function Calendar({
       </div>
 
       {/*
-       * One contiguous table: the container draws the top and left rules, each
-       * cell draws its own right and bottom. No gaps — adjacent cells share a
-       * single hairline, the way a box-drawn terminal table does.
+       * Separators only — no frame around the grid. Each cell draws its own
+       * right and bottom rule and the last column/row skip theirs, so the
+       * table is held together by internal lines rather than boxed in.
        *
        * The header is its own grid so the day grid can use auto-rows-fr and
        * stretch to fill the viewport without the header row stretching too.
        * Both are grid-cols-7 at the same width, so the columns stay aligned.
        */}
-      <div className="mt-2 grid grid-cols-7 border-t border-l border-border lg:mt-0">
-        {WEEKDAY_LABELS.map((day) => (
-          <div key={day} className="min-w-0 truncate border-r border-b border-border px-2 py-1 text-dim">
+      <div className="mt-2 grid grid-cols-7 lg:mt-0">
+        {WEEKDAY_LABELS.map((day, index) => (
+          <div
+            key={day}
+            className={[
+              "min-w-0 truncate border-b border-dotted border-border px-1.5 py-1 text-dim sm:px-2",
+              index === 6 ? "" : "border-r border-dotted border-border",
+            ].join(" ")}
+          >
             {day}
           </div>
         ))}
       </div>
 
-      <div className="grid flex-1 auto-rows-fr grid-cols-7 border-l border-border">
-        {days.map((key) => {
+      <div className="grid flex-1 auto-rows-fr grid-cols-7">
+        {days.map((key, index) => {
+          const isLastColumn = index % 7 === 6;
+          const isLastRow = index >= days.length - 7;
           const inMonth = isSameMonth(key, month);
           const trained = key in trainedDays;
           const isToday = key === todayKey;
@@ -89,8 +97,11 @@ export default function Calendar({
 
           // min-h keeps rows touch-sized on phones; auto-rows-fr on the grid
           // lets them grow past it to fill a desktop viewport.
-          const cellShape =
-            "flex min-h-14 min-w-0 flex-col justify-between border-r border-b border-border p-1.5 text-left sm:min-h-20 sm:p-2";
+          const cellShape = [
+            "flex min-h-14 min-w-0 flex-col justify-between p-1.5 text-left sm:min-h-20 sm:p-2",
+            isLastColumn ? "" : "border-r border-dotted border-border",
+            isLastRow ? "" : "border-b border-dotted border-border",
+          ].join(" ");
 
           if (!inMonth) {
             // Adjacent-month padding: keeps the table rectangular, but isn't
