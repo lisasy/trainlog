@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Calendar from "@/components/Calendar";
 import DayDetailSheet from "@/components/DayDetailSheet";
 import Sidebar from "@/components/Sidebar";
+import ThemePicker from "@/components/ThemePicker";
 import {
   addMonths,
   isSameMonth,
@@ -22,6 +23,13 @@ import {
   removePREntry,
   savePREntries,
 } from "@/lib/prs";
+import {
+  applyTheme,
+  loadTheme,
+  resolveTheme,
+  saveTheme,
+  type ThemeSelection,
+} from "@/lib/theme";
 import type { DateKey, PREntry, Split, TrainedDaysMap } from "@/lib/types";
 import {
   clearTrainedDay,
@@ -45,6 +53,8 @@ export default function Home() {
   const [month, setMonth] = useState<Date>(() => new Date());
   const [pickerDate, setPickerDate] = useState<DateKey | null>(null);
   const [detailDate, setDetailDate] = useState<DateKey | null>(null);
+  const [theme, setTheme] = useState<ThemeSelection>({ presetId: "zenwritten" });
+  const [themeOpen, setThemeOpen] = useState(false);
 
   useEffect(() => {
     const today = getTodayKey();
@@ -52,6 +62,11 @@ export default function Home() {
     setMonth(startOfMonth(parseDateKey(today)));
     setTrainedDays(loadTrainedDays());
     setPREntries(loadPREntries());
+    const storedTheme = loadTheme();
+    setTheme(storedTheme);
+    // The head script already applied this before paint; re-applying keeps
+    // state and the DOM in step when there was nothing stored.
+    applyTheme(resolveTheme(storedTheme));
     setMounted(true);
   }, []);
 
@@ -80,6 +95,12 @@ export default function Home() {
     setDetailDate(date);
   }
 
+  function commitTheme(next: ThemeSelection) {
+    setTheme(next);
+    applyTheme(resolveTheme(next));
+    saveTheme(next);
+  }
+
   function jumpToToday() {
     setMonth(startOfMonth(parseDateKey(getTodayKey())));
   }
@@ -103,6 +124,7 @@ export default function Home() {
         currentMonthKey={monthKey(currentMonth)}
         onSelectMonth={setMonth}
         onJumpToToday={jumpToToday}
+        onOpenTheme={() => setThemeOpen(true)}
       />
 
       <main className="flex min-h-dvh min-w-0 flex-1 flex-col px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6">
@@ -121,7 +143,16 @@ export default function Home() {
               aria-hidden
             />
           </span>
-          <span className="shrink-0 text-dim">{mounted ? `${monthCount} trained` : "…"}</span>
+          <span className="flex shrink-0 items-baseline gap-3 text-dim">
+            <span>{mounted ? `${monthCount} trained` : "…"}</span>
+            <button
+              type="button"
+              onClick={() => setThemeOpen(true)}
+              className="cursor-pointer transition-colors hover:text-accent focus-visible:text-accent focus-visible:outline-none lg:hidden"
+            >
+              theme
+            </button>
+          </span>
         </header>
 
         <div className="flex min-h-0 flex-1 flex-col py-3 sm:py-4">
@@ -153,6 +184,19 @@ export default function Home() {
           </div>
         </div>
       </main>
+
+      {themeOpen ? (
+        <ThemePicker
+          selection={theme}
+          onSelectPreset={(presetId) => commitTheme({ ...theme, presetId })}
+          onSetAccent={(accent) => commitTheme({ presetId: theme.presetId, ...(accent ? { accent } : {}) })}
+          onImported={({ trainedDays: days, prEntries: prs }) => {
+            setTrainedDays(days);
+            setPREntries(prs);
+          }}
+          onClose={() => setThemeOpen(false)}
+        />
+      ) : null}
 
       {detailDate !== null ? (
         <DayDetailSheet

@@ -12,6 +12,7 @@ export type SidebarProps = {
   currentMonthKey: string;
   onSelectMonth: (month: Date) => void;
   onJumpToToday: () => void;
+  onOpenTheme: () => void;
 };
 
 export default function Sidebar({
@@ -21,6 +22,7 @@ export default function Sidebar({
   currentMonthKey,
   onSelectMonth,
   onJumpToToday,
+  onOpenTheme,
 }: SidebarProps) {
   const activeKey = monthKey(activeMonth);
 
@@ -82,7 +84,13 @@ export default function Sidebar({
 
       <div className="flex items-baseline justify-between border-t border-dotted border-border px-3 py-1 text-dim">
         <span>local</span>
-        <span>v0.1</span>
+        <button
+          type="button"
+          onClick={onOpenTheme}
+          className="cursor-pointer text-dim transition-colors hover:text-accent focus-visible:text-accent focus-visible:outline-none"
+        >
+          theme
+        </button>
       </div>
     </aside>
   );

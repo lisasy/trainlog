@@ -103,25 +103,32 @@ export default function DayCell({
             {dayNumber}
           </span>
           {isTrained ? (
+            // Done gets a check; something still ahead only gets a marker,
+            // since nothing has been completed yet.
             <span className={statusTextClass(isFuture)} aria-hidden>
-              ▪
+              {isFuture ? "▪" : "✓"}
             </span>
           ) : null}
         </span>
 
-        <span className="flex w-full items-baseline justify-between gap-1">
-          {split ? (
-            <span className={`hidden truncate text-sm sm:block ${statusTextClass(isFuture)}`}>
-              {split}
-            </span>
-          ) : (
-            <span />
-          )}
-          {hasPRs ? (
-            <span className="text-sm text-dim" aria-label="has prs">
-              pr
-            </span>
+        <span className="flex w-full min-w-0 flex-col">
+          {isTrained && isFuture ? (
+            <span className="hidden truncate text-sm text-scheduled/75 sm:block">scheduled</span>
           ) : null}
+          <span className="flex w-full items-baseline justify-between gap-1">
+            {split ? (
+              <span className={`hidden truncate text-sm sm:block ${statusTextClass(isFuture)}`}>
+                {split}
+              </span>
+            ) : (
+              <span />
+            )}
+            {hasPRs ? (
+              <span className="text-sm text-dim" aria-label="has prs">
+                pr
+              </span>
+            ) : null}
+          </span>
         </span>
 
         {/* Centered in the cell, square by design, hidden while this cell's
