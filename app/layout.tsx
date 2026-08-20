@@ -19,7 +19,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   // Lets the page paint into the notch/home-indicator areas on iOS.
   viewportFit: "cover",
-  themeColor: "#212121",
+  themeColor: "#191919",
 };
 
 export default function RootLayout({

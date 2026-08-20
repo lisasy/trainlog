@@ -40,11 +40,15 @@ import {
 } from "@/lib/theme";
 import type { DateKey, PREntry, Split, TrainedDaysMap } from "@/lib/types";
 import {
+  applyTrainedSeed,
   clearTrainedDay,
   countTrainedByMonth,
   currentStreakWeeks,
+  isSeedDate,
+  loadRemovedSeedDates,
   loadTrainedDays,
   markTrained,
+  saveRemovedSeedDates,
   saveTrainedDays,
 } from "@/lib/workouts";
 
@@ -96,7 +100,10 @@ export default function Home() {
     setTodayKey(today);
     setMonth(startOfMonth(parseDateKey(today)));
     setCursorDate(today);
-    setTrainedDays(loadTrainedDays());
+    // Merge the repo's training history in, same additive rules as the PRs.
+    const seededDays = applyTrainedSeed(loadTrainedDays(), loadRemovedSeedDates());
+    setTrainedDays(seededDays);
+    saveTrainedDays(seededDays);
     // Merge the repo's PR history in, so a fresh browser starts populated and
     // entries added to lib/seed.ts later show up on the next load.
     const seeded = applySeed(loadPREntries(), loadRemovedSeedIds());
@@ -197,6 +204,10 @@ export default function Home() {
   }
 
   function handleClearDay(date: DateKey) {
+    // Tombstone seeded days, or the seed would restore them next load.
+    if (isSeedDate(date)) {
+      saveRemovedSeedDates([...loadRemovedSeedDates(), date]);
+    }
     commitDays(clearTrainedDay(trainedDays, date));
     setPickerDate(null);
   }
@@ -339,7 +350,9 @@ export default function Home() {
           onSelectPreset={(presetId) => commitTheme({ ...theme, presetId })}
           onSetAccent={(accent) => commitTheme({ presetId: theme.presetId, ...(accent ? { accent } : {}) })}
           onImported={({ trainedDays: days, prEntries: prs }) => {
-            setTrainedDays(days);
+            const mergedDays = applyTrainedSeed(days, loadRemovedSeedDates());
+            setTrainedDays(mergedDays);
+            saveTrainedDays(mergedDays);
             // An imported backup is authoritative for this device; re-apply
             // the seed so any newer repo entries are still present.
             const merged = applySeed(prs, loadRemovedSeedIds());
@@ -357,7 +370,7 @@ export default function Home() {
           entries={entriesForDate(prEntries, detailDate)}
           allEntries={prEntries}
           onSelectSplit={(split) => commitDays(markTrained(trainedDays, detailDate, split))}
-          onClearDay={() => commitDays(clearTrainedDay(trainedDays, detailDate))}
+          onClearDay={() => handleClearDay(detailDate)}
           onAddPR={(input) =>
             commitPRs(addPREntry(prEntries, { ...input, date: detailDate }))
           }

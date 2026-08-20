@@ -1,4 +1,4 @@
-import type { PREntry } from "./types";
+import type { PREntry, TrainedDaysMap } from "./types";
 
 /**
  * The PR history, transcribed from the source notes log.
@@ -88,4 +88,37 @@ export function seedEntries(): PREntry[] {
 
 export function isSeedId(id: string): boolean {
   return id.startsWith("seed:");
+}
+
+/**
+ * Training days from the source log, keyed by date.
+ *
+ * Seeded the same way the PRs are: additive only. A day already in storage
+ * keeps whatever split it has, so changing one in the app is never overwritten.
+ */
+export const TRAINED_SEED: Record<string, string> = {
+  "2026-08-09": "pull",
+  "2026-08-10": "lower",
+  "2026-08-11": "push",
+  "2026-08-17": "pull",
+  "2026-08-18": "lower",
+
+  // Scheduled ahead at the time of transcription. These become ordinary past
+  // days once their date passes, and will count toward streaks then.
+  "2026-08-21": "push",
+  "2026-08-22": "lower",
+  "2026-08-24": "pull",
+  "2026-08-25": "lower",
+};
+
+export function seedTrainedDays(): TrainedDaysMap {
+  const days: TrainedDaysMap = {};
+  for (const [date, split] of Object.entries(TRAINED_SEED)) {
+    days[date] = { date, split };
+  }
+  return days;
+}
+
+export function isSeedDate(date: string): boolean {
+  return date in TRAINED_SEED;
 }

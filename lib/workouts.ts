@@ -1,4 +1,5 @@
 import { parseDateKey, shiftDateKey, toDateKey } from "./dates";
+import { isSeedDate, seedTrainedDays } from "./seed";
 import { read, write } from "./storage";
 import type { DateKey, TrainedDay, TrainedDaysMap } from "./types";
 
@@ -117,3 +118,37 @@ export function currentStreakWeeks(
   }
   return streak;
 }
+
+/**
+ * Dates of seeded training days the user has cleared.
+ *
+ * Without these, clearing a seeded day would be undone on the next load.
+ */
+export function loadRemovedSeedDates(): string[] {
+  const dates = read<string[]>("daySeedRemoved", []);
+  return Array.isArray(dates) ? dates : [];
+}
+
+export function saveRemovedSeedDates(dates: string[]): void {
+  write("daySeedRemoved", dates);
+}
+
+/**
+ * Adds seeded days that aren't already present and haven't been cleared.
+ * Idempotent, and never touches a day the user has already edited.
+ */
+export function applyTrainedSeed(
+  days: TrainedDaysMap,
+  removedDates: readonly string[],
+): TrainedDaysMap {
+  const removed = new Set(removedDates);
+  let next: TrainedDaysMap | null = null;
+  for (const [date, day] of Object.entries(seedTrainedDays())) {
+    if (date in days || removed.has(date)) continue;
+    if (next === null) next = { ...days };
+    next[date] = day;
+  }
+  return next ?? days;
+}
+
+export { isSeedDate };
