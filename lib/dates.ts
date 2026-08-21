@@ -87,31 +87,37 @@ export function monthKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
-/** Months since year 0 — lets us step and compare months as plain integers. */
-function monthIndex(date: Date): number {
-  return date.getFullYear() * 12 + date.getMonth();
+/**
+ * Navigable range: March 2026 (the start of the transcribed history) through
+ * the current month. Nothing earlier is relevant, and the future isn't
+ * something you can look at — only the current month can be scheduled into.
+ */
+export const EARLIEST_MONTH_KEY = "2026-03";
+
+/** "YYYY-MM" strings compare correctly as plain strings. */
+export function isMonthKeyInRange(month: string, today: DateKey): boolean {
+  if (today === "") return true;
+  return month >= EARLIEST_MONTH_KEY && month <= today.slice(0, 7);
 }
 
-/**
- * The sidebar's month list, newest first.
- *
- * Anchored on the current month rather than the displayed one, so the list
- * doesn't shift under you as you page around. `mustInclude` widens the range
- * when you've navigated outside it, guaranteeing the active month is present.
- */
-export function monthListDescending(
-  anchor: Date,
-  back: number,
-  forward: number,
-  mustInclude: Date,
-): Date[] {
-  const anchorIndex = monthIndex(anchor);
-  const includeIndex = monthIndex(mustInclude);
-  const high = Math.max(anchorIndex + forward, includeIndex);
-  const low = Math.min(anchorIndex - back, includeIndex);
+export function isMonthInRange(month: Date, today: DateKey): boolean {
+  return isMonthKeyInRange(monthKey(month), today);
+}
+
+export function isDateKeyInRange(key: DateKey, today: DateKey): boolean {
+  return isMonthKeyInRange(key.slice(0, 7), today);
+}
+
+/** The sidebar's month list: current month first, back to the earliest. */
+export function monthListInRange(today: DateKey): Date[] {
+  if (today === "") return [];
+  const [earliestYear, earliestMonth] = EARLIEST_MONTH_KEY.split("-").map(Number);
+  const first = earliestYear * 12 + (earliestMonth - 1);
+  const current = parseDateKey(today);
+  const last = current.getFullYear() * 12 + current.getMonth();
 
   const months: Date[] = [];
-  for (let i = high; i >= low; i -= 1) {
+  for (let i = last; i >= first; i -= 1) {
     months.push(new Date(Math.floor(i / 12), i % 12, 1));
   }
   return months;

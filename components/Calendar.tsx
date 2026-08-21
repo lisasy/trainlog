@@ -2,7 +2,15 @@
 
 import { useRef } from "react";
 
-import { buildMonthGrid, isSameMonth, monthLabel, parseDateKey, WEEKDAY_LABELS } from "@/lib/dates";
+import {
+  addMonths,
+  buildMonthGrid,
+  isMonthInRange,
+  isSameMonth,
+  monthLabel,
+  parseDateKey,
+  WEEKDAY_LABELS,
+} from "@/lib/dates";
 import type { DateKey, Split, TrainedDaysMap } from "@/lib/types";
 import DayCell from "./DayCell";
 
@@ -31,17 +39,20 @@ function BracketButton({
   label,
   onClick,
   ariaLabel,
+  disabled,
 }: {
   label: string;
   onClick: () => void;
   ariaLabel: string;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-label={ariaLabel}
-      className="tap-target inline-flex h-11 cursor-pointer items-center text-dim transition-colors hover:text-accent focus-visible:text-accent focus-visible:outline-none"
+      disabled={disabled}
+      className="tap-target inline-flex h-11 cursor-pointer items-center text-dim transition-colors hover:text-accent focus-visible:text-accent focus-visible:outline-none disabled:cursor-not-allowed disabled:text-dim/30 disabled:hover:text-dim/30"
     >
       <span aria-hidden>[</span>
       <span className="px-1.5">{label}</span>
@@ -77,12 +88,18 @@ export default function Calendar({
    * without that, one flick would skip half a year. A cooldown keeps a long
    * continuous scroll from running away too.
    */
+  // March 2026 is the start of the history; the current month is the end.
+  // There is nothing to show outside that, so both ends are hard stops.
+  const canGoPrev = isMonthInRange(addMonths(month, -1), todayKey);
+  const canGoNext = isMonthInRange(addMonths(month, 1), todayKey);
+
   const wheelDelta = useRef(0);
   const wheelResetAt = useRef(0);
   const lastStepAt = useRef(0);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
 
   function stepMonth(direction: 1 | -1) {
+    if (direction === 1 ? !canGoNext : !canGoPrev) return;
     const now = Date.now();
     if (now - lastStepAt.current < 250) return;
     lastStepAt.current = now;
@@ -133,9 +150,19 @@ export default function Calendar({
           this job, so showing both would just be two ways to say the same. */}
       <div className="flex items-center justify-between lg:hidden">
         <div className="flex items-center">
-          <BracketButton label="‹" onClick={onPrevMonth} ariaLabel="Previous month" />
+          <BracketButton
+            label="‹"
+            onClick={onPrevMonth}
+            ariaLabel="Previous month"
+            disabled={!canGoPrev}
+          />
           <span className="px-3 text-fg">{monthLabel(month)}</span>
-          <BracketButton label="›" onClick={onNextMonth} ariaLabel="Next month" />
+          <BracketButton
+            label="›"
+            onClick={onNextMonth}
+            ariaLabel="Next month"
+            disabled={!canGoNext}
+          />
         </div>
         <BracketButton label="today" onClick={onJumpToToday} ariaLabel="Jump to current month" />
       </div>

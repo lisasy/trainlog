@@ -12,7 +12,9 @@ import {
   addMonths,
   isSameMonth,
   monthKey,
-  monthListDescending,
+  isDateKeyInRange,
+  isMonthInRange,
+  monthListInRange,
   monthPath,
   parseDateKey,
   shiftDateKey,
@@ -180,6 +182,13 @@ export default function Home() {
           return;
       }
 
+      // Outside March 2026 .. current month there is nothing to show, so the
+      // move is simply refused rather than clamped to an edge date.
+      if (!isDateKeyInRange(nextDate, todayKey)) {
+        event.preventDefault();
+        return;
+      }
+
       event.preventDefault();
       cursorRef.current = nextDate;
       setCursorDate(nextDate);
@@ -239,6 +248,11 @@ export default function Home() {
     commitPRs(removePREntry(prEntries, id));
   }
 
+  /** Refuses a move outside the navigable range, keeping the current month. */
+  function clampMonth(next: Date, fallback: Date): Date {
+    return isMonthInRange(next, todayKey) ? next : fallback;
+  }
+
   function jumpToToday() {
     setMonth(startOfMonth(parseDateKey(getTodayKey())));
   }
@@ -246,10 +260,7 @@ export default function Home() {
   const countsByMonth = useMemo(() => countTrainedByMonth(trainedDays), [trainedDays]);
   const datesWithPRs = useMemo(() => computeDatesWithPRs(prEntries), [prEntries]);
   const currentMonth = mounted ? startOfMonth(parseDateKey(todayKey)) : month;
-  const months = useMemo(
-    () => monthListDescending(currentMonth, 11, 1, month),
-    [currentMonth, month],
-  );
+  const months = useMemo(() => monthListInRange(todayKey), [todayKey]);
   const streakWeeks = useMemo(
     () => currentStreakWeeks(trainedDays, todayKey),
     [trainedDays, todayKey],
@@ -313,13 +324,24 @@ export default function Home() {
               </span>
             ) : null}
             <span className="hidden sm:inline">{mounted ? `${monthCount} trained` : "…"}</span>
-            <button
-              type="button"
-              onClick={() => setView(view === "calendar" ? "prs" : "calendar")}
-              className="cursor-pointer transition-colors hover:text-accent focus-visible:text-accent focus-visible:outline-none lg:hidden"
-            >
-              {view === "calendar" ? "prs" : "calendar"}
-            </button>
+            <span className="flex shrink-0 items-center gap-1 lg:hidden" role="group" aria-label="View">
+              {(["calendar", "prs"] as const).map((name, index) => (
+                <span key={name} className="flex items-center gap-1">
+                  {index > 0 ? <span className="text-dim/50" aria-hidden>|</span> : null}
+                  <button
+                    type="button"
+                    onClick={() => setView(name)}
+                    aria-current={view === name ? "true" : undefined}
+                    className={[
+                      "cursor-pointer transition-colors focus-visible:outline-none",
+                      view === name ? "text-accent" : "text-dim hover:text-accent focus-visible:text-accent",
+                    ].join(" ")}
+                  >
+                    {name}
+                  </button>
+                </span>
+              ))}
+            </span>
             <button
               type="button"
               onClick={() => setThemeOpen(true)}
@@ -345,8 +367,8 @@ export default function Home() {
               datesWithPRs={datesWithPRs}
               pickerDate={pickerDate}
               cursorDate={cursorDate}
-              onPrevMonth={() => setMonth((m) => addMonths(m, -1))}
-              onNextMonth={() => setMonth((m) => addMonths(m, 1))}
+              onPrevMonth={() => setMonth((m) => clampMonth(addMonths(m, -1), m))}
+              onNextMonth={() => setMonth((m) => clampMonth(addMonths(m, 1), m))}
               onJumpToToday={jumpToToday}
               onOpenPicker={setPickerDate}
               onClosePicker={() => setPickerDate(null)}
