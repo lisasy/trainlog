@@ -55,7 +55,7 @@ export default function DayCell({
 
   const isTrained = trainedDay !== undefined;
   const split = trainedDay?.split;
-  const heading = isTrained ? "edit workout" : isFuture ? "schedule workout" : "mark workout";
+  const heading = isTrained ? "edit workout" : isFuture ? "schedule workout" : "[+] add workout";
 
   const frame = [
     "relative flex min-h-14 min-w-0 flex-col sm:min-h-20",

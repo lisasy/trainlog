@@ -306,11 +306,10 @@ export default function Home() {
             so the two chrome rules read as one line across the whole top. */}
         <header className="flex h-11 shrink-0 items-baseline justify-between gap-3 border-b border-dotted border-border pt-2">
           <span className="flex min-w-0 items-baseline">
-            <span className="text-dim">&gt;&nbsp;</span>
+            <span className="text-dim">:</span>
             {/* The title lives in the sidebar once there is one; on phones the
                 header carries it instead. */}
             <span className="text-accent glow lg:hidden">trainlog</span>
-            <span className="hidden text-dim lg:inline">~/trainlog/</span>
             <span className="hidden text-accent glow lg:inline">{monthPath(month)}</span>
             <span
               className="cursor-block ml-1.5 inline-block h-[0.95em] w-[0.55em] translate-y-[0.1em] bg-accent"
@@ -345,7 +344,7 @@ export default function Home() {
             <button
               type="button"
               onClick={() => setThemeOpen(true)}
-              className="cursor-pointer transition-colors hover:text-accent focus-visible:text-accent focus-visible:outline-none lg:hidden"
+              className="link cursor-pointer transition-colors hover:text-accent focus-visible:text-accent focus-visible:outline-none lg:hidden"
             >
               theme
             </button>

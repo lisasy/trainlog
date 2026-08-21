@@ -82,7 +82,7 @@ export default function SplitPicker({
           <button
             type="button"
             onClick={onOpenDetail}
-            className="cursor-pointer px-2 py-2 text-dim hover:text-accent focus-visible:text-accent focus-visible:outline-none sm:py-1"
+            className="link cursor-pointer px-2 py-2 text-dim hover:text-accent focus-visible:text-accent focus-visible:outline-none sm:py-1"
           >
             details
           </button>
@@ -90,7 +90,7 @@ export default function SplitPicker({
             <button
               type="button"
               onClick={onClear}
-              className="cursor-pointer px-2 py-2 text-dim hover:text-accent focus-visible:text-accent focus-visible:outline-none sm:py-1"
+              className="link cursor-pointer px-2 py-2 text-dim hover:text-accent focus-visible:text-accent focus-visible:outline-none sm:py-1"
             >
               clear
             </button>

@@ -141,6 +141,24 @@ body {
   }
 }
 
+/*
+ * Bare-text actions. The bracketed controls carry their own affordance, so
+ * this marks the ones that would otherwise read as labels — a dotted rule,
+ * quiet until hover, matching the dotted separators everywhere else.
+ */
+.link {
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+}
+
+.link:hover,
+.link:focus-visible {
+  text-decoration-color: currentColor;
+}
+
 .tap-target {
   -webkit-touch-callout: none;
   -webkit-user-select: none;

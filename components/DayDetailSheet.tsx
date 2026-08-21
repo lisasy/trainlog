@@ -99,7 +99,7 @@ export default function DayDetailSheet({
             <button
               type="button"
               onClick={onClearDay}
-              className="mt-2 cursor-pointer text-sm text-dim hover:text-accent focus-visible:text-accent focus-visible:outline-none"
+              className="link mt-2 cursor-pointer text-sm text-dim hover:text-accent focus-visible:text-accent focus-visible:outline-none"
             >
               clear this day
             </button>

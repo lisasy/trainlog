@@ -90,7 +90,7 @@ export default function PREditSheet({
             <button
               type="button"
               onClick={onDelete}
-              className="mt-4 cursor-pointer text-sm text-dim hover:text-accent focus-visible:text-accent focus-visible:outline-none"
+              className="link mt-4 cursor-pointer text-sm text-dim hover:text-accent focus-visible:text-accent focus-visible:outline-none"
             >
               delete this pr
             </button>

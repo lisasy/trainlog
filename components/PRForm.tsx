@@ -160,7 +160,7 @@ export default function PRForm({
         <button
           type="button"
           onClick={() => setDate("")}
-          className="cursor-pointer self-start text-sm text-dim hover:text-accent focus-visible:text-accent focus-visible:outline-none"
+          className="link cursor-pointer self-start text-sm text-dim hover:text-accent focus-visible:text-accent focus-visible:outline-none"
         >
           clear date (undated)
         </button>

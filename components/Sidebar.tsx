@@ -96,7 +96,7 @@ export default function Sidebar({
           <button
             type="button"
             onClick={onJumpToToday}
-            className="cursor-pointer text-dim transition-colors hover:text-accent focus-visible:text-accent focus-visible:outline-none"
+            className="link cursor-pointer text-dim transition-colors hover:text-accent focus-visible:text-accent focus-visible:outline-none"
           >
             today
           </button>
@@ -138,7 +138,7 @@ export default function Sidebar({
         <button
           type="button"
           onClick={onOpenTheme}
-          className="cursor-pointer text-dim transition-colors hover:text-accent focus-visible:text-accent focus-visible:outline-none"
+          className="link cursor-pointer text-dim transition-colors hover:text-accent focus-visible:text-accent focus-visible:outline-none"
         >
           theme
         </button>
