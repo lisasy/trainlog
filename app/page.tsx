@@ -45,8 +45,10 @@ import {
   applyTrainedSeed,
   clearTrainedDay,
   countTrainedByMonth,
+  averageDaysPerMonth,
   currentStreakWeeks,
   isSeedDate,
+  mostFrequentWeekday,
   loadRemovedSeedDates,
   loadTrainedDays,
   markTrained,
@@ -252,6 +254,14 @@ export default function Home() {
     () => currentStreakWeeks(trainedDays, todayKey),
     [trainedDays, todayKey],
   );
+  const topWeekday = useMemo(
+    () => mostFrequentWeekday(trainedDays, todayKey),
+    [trainedDays, todayKey],
+  );
+  const averagePerMonth = useMemo(
+    () => averageDaysPerMonth(trainedDays, todayKey),
+    [trainedDays, todayKey],
+  );
   const monthCount = Object.keys(trainedDays).filter((key) => isSameMonth(key, month)).length;
   const totalTrained = Object.keys(trainedDays).length;
 
@@ -262,11 +272,22 @@ export default function Home() {
         activeMonth={month}
         countsByMonth={countsByMonth}
         currentMonthKey={monthKey(currentMonth)}
-        onSelectMonth={setMonth}
-        onJumpToToday={jumpToToday}
+        onSelectMonth={(next) => {
+          // Picking a month is a calendar action; showing it while the ledger
+          // is open would look like nothing happened.
+          setMonth(next);
+          setView("calendar");
+        }}
+        onJumpToToday={() => {
+          jumpToToday();
+          setView("calendar");
+        }}
         onOpenTheme={() => setThemeOpen(true)}
         view={view}
         onSelectView={setView}
+        streakWeeks={streakWeeks}
+        topWeekday={topWeekday}
+        averagePerMonth={averagePerMonth}
       />
 
       <main className="flex min-h-dvh min-w-0 flex-1 flex-col px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6">
@@ -286,7 +307,11 @@ export default function Home() {
             />
           </span>
           <span className="flex shrink-0 items-baseline gap-3 text-dim">
-            {mounted ? <StreakBadge weeks={streakWeeks} /> : null}
+            {mounted ? (
+              <span className="lg:hidden">
+                <StreakBadge weeks={streakWeeks} />
+              </span>
+            ) : null}
             <span className="hidden sm:inline">{mounted ? `${monthCount} trained` : "…"}</span>
             <button
               type="button"

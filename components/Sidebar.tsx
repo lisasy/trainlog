@@ -1,6 +1,7 @@
 "use client";
 
-import { monthKey, monthNameYear } from "@/lib/dates";
+import { monthKey, monthNameYear, WEEKDAY_LABELS } from "@/lib/dates";
+import StreakBadge from "./StreakBadge";
 
 export type SidebarProps = {
   /** Newest first. */
@@ -15,6 +16,10 @@ export type SidebarProps = {
   onOpenTheme: () => void;
   view: "calendar" | "prs";
   onSelectView: (view: "calendar" | "prs") => void;
+  streakWeeks: number;
+  /** Weekday trained most often, Sunday-indexed. */
+  topWeekday: { index: number; count: number } | null;
+  averagePerMonth: number | null;
 };
 
 export default function Sidebar({
@@ -27,6 +32,9 @@ export default function Sidebar({
   onOpenTheme,
   view,
   onSelectView,
+  streakWeeks,
+  topWeekday,
+  averagePerMonth,
 }: SidebarProps) {
   const activeKey = monthKey(activeMonth);
 
@@ -64,6 +72,23 @@ export default function Sidebar({
           </button>
         ))}
       </nav>
+
+      <div className="px-1 pt-4">
+        <div className="px-2 pb-1 text-dim">stats</div>
+        <StreakBadge weeks={streakWeeks} variant="block" />
+        <div className="mt-1 flex items-baseline justify-between px-2">
+          <span className="text-dim">most popular</span>
+          <span className="text-fg/70">
+            {topWeekday === null ? "~" : WEEKDAY_LABELS[topWeekday.index]}
+          </span>
+        </div>
+        <div className="flex items-baseline justify-between px-2">
+          <span className="text-dim">avg / month</span>
+          <span className="text-fg/70">
+            {averagePerMonth === null ? "~" : averagePerMonth.toFixed(1)}
+          </span>
+        </div>
+      </div>
 
       <nav aria-label="Months" className="min-h-0 flex-1 overflow-y-auto px-1 pt-4 pb-2">
         <div className="flex items-baseline justify-between px-2 pb-1">

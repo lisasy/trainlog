@@ -1,5 +1,7 @@
 "use client";
 
+import { useRef } from "react";
+
 import { buildMonthGrid, isSameMonth, monthLabel, parseDateKey, WEEKDAY_LABELS } from "@/lib/dates";
 import type { DateKey, Split, TrainedDaysMap } from "@/lib/types";
 import DayCell from "./DayCell";
@@ -67,8 +69,66 @@ export default function Calendar({
   const days = buildMonthGrid(month).flat();
   const rowCount = days.length / 7;
 
+  /**
+   * Wheel and swipe both step months, but they arrive very differently.
+   *
+   * A trackpad flick fires a burst of small wheel events, so deltas are
+   * accumulated against a threshold and the burst is reset once it goes quiet;
+   * without that, one flick would skip half a year. A cooldown keeps a long
+   * continuous scroll from running away too.
+   */
+  const wheelDelta = useRef(0);
+  const wheelResetAt = useRef(0);
+  const lastStepAt = useRef(0);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+
+  function stepMonth(direction: 1 | -1) {
+    const now = Date.now();
+    if (now - lastStepAt.current < 250) return;
+    lastStepAt.current = now;
+    if (direction === 1) onNextMonth();
+    else onPrevMonth();
+  }
+
+  function handleWheel(event: React.WheelEvent) {
+    const now = Date.now();
+    // A gap between events means a new gesture, not a continuation.
+    if (now > wheelResetAt.current) wheelDelta.current = 0;
+    wheelResetAt.current = now + 220;
+
+    wheelDelta.current += event.deltaY;
+    if (Math.abs(wheelDelta.current) < 40) return;
+    stepMonth(wheelDelta.current > 0 ? 1 : -1);
+    wheelDelta.current = 0;
+  }
+
+  function handleTouchStart(event: React.TouchEvent) {
+    const touch = event.touches[0];
+    touchStart.current = { x: touch.clientX, y: touch.clientY };
+  }
+
+  function handleTouchEnd(event: React.TouchEvent) {
+    const start = touchStart.current;
+    touchStart.current = null;
+    if (start === null) return;
+
+    const touch = event.changedTouches[0];
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    // Horizontal only, and clearly horizontal — a vertical swipe belongs to
+    // the page, and stealing it would break scrolling on small screens.
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    stepMonth(dx < 0 ? 1 : -1);
+  }
+
   return (
-    <section aria-label="Training calendar" className="flex min-h-0 flex-1 flex-col">
+    <section
+      aria-label="Training calendar"
+      className="flex min-h-0 flex-1 flex-col"
+      onWheel={handleWheel}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       {/* Sequential nav for phones. On desktop the sidebar's month list does
           this job, so showing both would just be two ways to say the same. */}
       <div className="flex items-center justify-between lg:hidden">

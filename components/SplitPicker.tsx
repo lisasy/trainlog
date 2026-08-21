@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { SPLITS, type Split } from "@/lib/types";
 
 export type SplitPickerProps = {
-  /** "mark workout" / "schedule workout" / "edit workout". */
+  /** "add workout" / "schedule workout" / "edit workout". */
   heading: string;
   isTrained: boolean;
   currentSplit?: string;
