@@ -6,14 +6,12 @@ import DayDetailSheet from "@/components/DayDetailSheet";
 import PREditSheet from "@/components/PREditSheet";
 import PRList from "@/components/PRList";
 import Sidebar from "@/components/Sidebar";
-import StreakBadge from "@/components/StreakBadge";
+import StatsPanel from "@/components/StatsPanel";
 import ThemePicker from "@/components/ThemePicker";
 import {
-  addMonths,
   isSameMonth,
   monthKey,
   isDateKeyInRange,
-  isMonthInRange,
   monthListInRange,
   monthPath,
   parseDateKey,
@@ -240,17 +238,16 @@ export default function Home() {
     saveTheme(next);
   }
 
+  function handleEditPR(entry: PREntry) {
+    setPRSheet({ mode: "edit", id: entry.id });
+  }
+
   function handleRemovePR(id: string) {
     // Tombstone seeded entries, or the seed would resurrect them next load.
     if (isSeedId(id)) {
       saveRemovedSeedIds([...loadRemovedSeedIds(), id]);
     }
     commitPRs(removePREntry(prEntries, id));
-  }
-
-  /** Refuses a move outside the navigable range, keeping the current month. */
-  function clampMonth(next: Date, fallback: Date): Date {
-    return isMonthInRange(next, todayKey) ? next : fallback;
   }
 
   function jumpToToday() {
@@ -277,7 +274,7 @@ export default function Home() {
   const totalTrained = Object.keys(trainedDays).length;
 
   return (
-    <div className="flex min-h-dvh w-full">
+    <div className="flex h-dvh w-full">
       <Sidebar
         months={months}
         activeMonth={month}
@@ -301,27 +298,29 @@ export default function Home() {
         averagePerMonth={averagePerMonth}
       />
 
-      <main className="flex min-h-dvh min-w-0 flex-1 flex-col px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6">
+      <main className="flex h-dvh min-w-0 flex-1 flex-col px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6">
         {/* h-11 + a dotted bottom border, identical to the sidebar's title bar,
             so the two chrome rules read as one line across the whole top. */}
         <header className="flex h-11 shrink-0 items-baseline justify-between gap-3 border-b border-dotted border-border pt-2">
-          <span className="flex min-w-0 items-baseline">
+          <span className="flex min-w-0 items-baseline overflow-hidden whitespace-nowrap">
             <span className="text-dim">:</span>
             {/* The title lives in the sidebar once there is one; on phones the
                 header carries it instead. */}
-            <span className="text-accent glow lg:hidden">trainlog</span>
+            <span className="truncate text-accent glow lg:hidden">trainlog</span>
             <span className="hidden text-accent glow lg:inline">{monthPath(month)}</span>
             <span
-              className="cursor-block ml-1.5 inline-block h-[0.95em] w-[0.55em] translate-y-[0.1em] bg-accent"
+              className="cursor-block ml-1.5 inline-block h-[0.95em] w-[0.55em] shrink-0 translate-y-[0.1em] bg-accent"
               aria-hidden
             />
           </span>
+          {/*
+           * No streak badge here on phones: the mobile stats panel right
+           * below the calendar already leads with it, and at the narrowest
+           * supported width (320px) this side has just enough room for the
+           * view toggle and theme link without the title on the left having
+           * to shrink into overlap.
+           */}
           <span className="flex shrink-0 items-baseline gap-3 text-dim">
-            {mounted ? (
-              <span className="lg:hidden">
-                <StreakBadge weeks={streakWeeks} />
-              </span>
-            ) : null}
             <span className="hidden sm:inline">{mounted ? `${monthCount} trained` : "…"}</span>
             <span className="flex shrink-0 items-center gap-1 lg:hidden" role="group" aria-label="View">
               {(["calendar", "prs"] as const).map((name, index) => (
@@ -356,25 +355,37 @@ export default function Home() {
             <PRList
               entries={prEntries}
               onAddPR={(exerciseName) => setPRSheet({ mode: "add", exerciseName })}
-              onEditPR={(entry) => setPRSheet({ mode: "edit", id: entry.id })}
+              onEditPR={handleEditPR}
             />
           ) : mounted ? (
-            <Calendar
-              month={month}
-              todayKey={todayKey}
-              trainedDays={trainedDays}
-              datesWithPRs={datesWithPRs}
-              pickerDate={pickerDate}
-              cursorDate={cursorDate}
-              onPrevMonth={() => setMonth((m) => clampMonth(addMonths(m, -1), m))}
-              onNextMonth={() => setMonth((m) => clampMonth(addMonths(m, 1), m))}
-              onJumpToToday={jumpToToday}
-              onOpenPicker={setPickerDate}
-              onClosePicker={() => setPickerDate(null)}
-              onMarkDay={handleMarkDay}
-              onClearDay={handleClearDay}
-              onOpenDetail={handleOpenDetail}
-            />
+            <div className="flex min-h-0 flex-1 flex-col">
+              <div className="flex h-[52dvh] min-h-0 shrink-0 flex-col lg:h-auto lg:flex-1">
+                <Calendar
+                  months={months}
+                  activeMonth={month}
+                  todayKey={todayKey}
+                  trainedDays={trainedDays}
+                  datesWithPRs={datesWithPRs}
+                  pickerDate={pickerDate}
+                  cursorDate={cursorDate}
+                  onActiveMonthChange={setMonth}
+                  onOpenPicker={setPickerDate}
+                  onClosePicker={() => setPickerDate(null)}
+                  onMarkDay={handleMarkDay}
+                  onClearDay={handleClearDay}
+                  onOpenDetail={handleOpenDetail}
+                />
+              </div>
+              <StatsPanel
+                streakWeeks={streakWeeks}
+                topWeekday={topWeekday}
+                averagePerMonth={averagePerMonth}
+                prEntries={prEntries}
+                onEditPR={handleEditPR}
+                onAddPR={() => setPRSheet({ mode: "add" })}
+                onViewAllPRs={() => setView("prs")}
+              />
+            </div>
           ) : (
             <p className="text-dim">loading…</p>
           )}

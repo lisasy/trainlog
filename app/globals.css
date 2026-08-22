@@ -14,7 +14,11 @@
   --bg: #191919;
   --fg: #bbbbbb;
   --accent: #b77e64;
-  --dim: #7d7472;
+  /* Lifted from #7d7472 - the original only hit 3.9:1 on --bg, failing WCAG
+   * AA (4.5:1) for the body-weight text it's used for everywhere (labels,
+   * weekday headers, meta copy). This clears ~4.6:1 while keeping the same
+   * warm-gray hue. */
+  --dim: #898180;
   --border: #3d3839;
 
   /*
@@ -89,6 +93,25 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .cursor-block {
     animation: none;
+  }
+
+  /*
+   * The month feed's programmatic scrollTo() calls (today/prev/next/sidebar)
+   * ask for behavior: "smooth"; scroll-behavior is set on the scrolling
+   * element itself (Element.scrollTo respects the scroller's own CSS, not
+   * html's), so this override makes the browser honor the request as an
+   * instant jump instead, without touching the scroll logic itself. Native
+   * scroll-snap from a drag/wheel gesture is left alone — snapping to a
+   * month boundary is the mechanic, not decoration.
+   */
+  .snap-y {
+    scroll-behavior: auto;
+  }
+
+  /* The active/inactive month opacity crossfade in the calendar feed is a
+     nicety, not information — safe to cut for reduced-motion. */
+  [data-month-key] {
+    transition-duration: 0ms !important;
   }
 }
 

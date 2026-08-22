@@ -73,7 +73,7 @@ export default function SplitPicker({
               <span className={isCurrent ? "text-accent" : "text-dim/40"} aria-hidden>
                 ▪
               </span>
-              <span className={isCurrent ? "text-fg" : "text-fg/70"}>{split}</span>
+              <span className={isCurrent ? "text-fg" : "text-fg/90"}>{split}</span>
             </button>
           );
         })}

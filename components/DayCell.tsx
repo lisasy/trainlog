@@ -85,7 +85,7 @@ export default function DayCell({
         }`}
         className={[
           "tap-target group flex h-full w-full cursor-pointer flex-col justify-between p-1.5 text-left",
-          "transition-colors duration-100 focus-visible:bg-fg/10 focus-visible:outline-none sm:p-2",
+          "transition-colors duration-100 focus-visible:bg-fg/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent sm:p-2",
           // outline rather than border: no layout shift as the cursor moves.
           isCursor ? "outline outline-1 -outline-offset-1 outline-fg/60" : "",
           isTrained ? statusTintClass(isFuture) : "hover:bg-fg/5",
@@ -102,7 +102,7 @@ export default function DayCell({
                 ? "bg-accent px-1 text-bg"
                 : isTrained
                   ? statusTextClass(isFuture)
-                  : "text-fg/55"
+                  : "text-fg/90"
             }
           >
             {dayNumber}

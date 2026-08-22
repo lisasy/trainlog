@@ -1,12 +1,11 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 
 import {
-  addMonths,
   buildMonthGrid,
-  isMonthInRange,
   isSameMonth,
+  monthKey,
   monthLabel,
   parseDateKey,
   WEEKDAY_LABELS,
@@ -15,8 +14,10 @@ import type { DateKey, Split, TrainedDaysMap } from "@/lib/types";
 import DayCell from "./DayCell";
 
 export type CalendarProps = {
-  /** Any date inside the month being displayed. */
-  month: Date;
+  /** The full navigable range, newest (current) month first. */
+  months: Date[];
+  /** The month the rest of the UI treats as current — header label, counts. */
+  activeMonth: Date;
   todayKey: DateKey;
   trainedDays: TrainedDaysMap;
   /** Dates with at least one PR attached. */
@@ -25,9 +26,25 @@ export type CalendarProps = {
   pickerDate: DateKey | null;
   /** Where the keyboard cursor sits. */
   cursorDate: DateKey | null;
-  onPrevMonth: () => void;
-  onNextMonth: () => void;
-  onJumpToToday: () => void;
+  /**
+   * The single source of truth for "which month is active" — called both when
+   * scrolling brings a different month into view, and when a nav control
+   * (prev/next/today, the sidebar, or the keyboard) asks to jump to one.
+   */
+  onActiveMonthChange: (month: Date) => void;
+  onOpenPicker: (date: DateKey) => void;
+  onClosePicker: () => void;
+  onMarkDay: (date: DateKey, split: Split) => void;
+  onClearDay: (date: DateKey) => void;
+  onOpenDetail: (date: DateKey) => void;
+};
+
+type SharedGridProps = {
+  todayKey: DateKey;
+  trainedDays: TrainedDaysMap;
+  datesWithPRs: ReadonlySet<DateKey>;
+  pickerDate: DateKey | null;
+  cursorDate: DateKey | null;
   onOpenPicker: (date: DateKey) => void;
   onClosePicker: () => void;
   onMarkDay: (date: DateKey, split: Split) => void;
@@ -61,165 +78,269 @@ function BracketButton({
   );
 }
 
-export default function Calendar({
+/*
+ * Separators only — no frame around the grid. Each cell draws its own right
+ * and bottom rule and the last column/row skip theirs, so the table is held
+ * together by internal lines rather than boxed in.
+ */
+function WeekdayHeader() {
+  return (
+    <div className="grid grid-cols-7">
+      {WEEKDAY_LABELS.map((day, index) => (
+        <div
+          key={day}
+          className={[
+            "min-w-0 truncate border-b border-dotted border-border px-1.5 py-1 text-sm text-dim sm:px-2",
+            index === 6 ? "" : "border-r border-dotted border-border",
+          ].join(" ")}
+        >
+          {day}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * One month's worth of cells. Sized to its natural, compact height by
+ * default (the mobile feed stacks several of these), but stretches to fill
+ * its section at `lg` and up, where each month fills the whole calendar
+ * area instead of several peeking at once.
+ */
+function MonthDayGrid({
   month,
   todayKey,
   trainedDays,
   datesWithPRs,
   pickerDate,
   cursorDate,
-  onPrevMonth,
-  onNextMonth,
-  onJumpToToday,
+  onOpenPicker,
+  onClosePicker,
+  onMarkDay,
+  onClearDay,
+  onOpenDetail,
+}: SharedGridProps & { month: Date }) {
+  const days = buildMonthGrid(month).flat();
+  const rowCount = days.length / 7;
+
+  return (
+    <div className="grid grid-cols-7 lg:flex-1 lg:auto-rows-fr">
+      {days.map((dateKey, index) => {
+        const column = index % 7;
+        const row = Math.floor(index / 7);
+
+        return (
+          <DayCell
+            key={dateKey}
+            date={dateKey}
+            dayNumber={String(parseDateKey(dateKey).getDate()).padStart(2, "0")}
+            inMonth={isSameMonth(dateKey, month)}
+            isToday={dateKey === todayKey}
+            // YYYY-MM-DD sorts lexicographically, so a string compare is a
+            // date compare.
+            isFuture={dateKey > todayKey}
+            isCursor={dateKey === cursorDate}
+            trainedDay={trainedDays[dateKey]}
+            hasPRs={datesWithPRs.has(dateKey)}
+            isPickerOpen={pickerDate === dateKey}
+            isLastColumn={column === 6}
+            isLastRow={row === rowCount - 1}
+            // Popovers near the bottom or right edge open the other way.
+            flipUp={row >= rowCount - 2}
+            alignRight={column >= 5}
+            onOpenPicker={onOpenPicker}
+            onClosePicker={onClosePicker}
+            onMarkDay={onMarkDay}
+            onClearDay={onClearDay}
+            onOpenDetail={onOpenDetail}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+export default function Calendar({
+  months,
+  activeMonth,
+  todayKey,
+  trainedDays,
+  datesWithPRs,
+  pickerDate,
+  cursorDate,
+  onActiveMonthChange,
   onOpenPicker,
   onClosePicker,
   onMarkDay,
   onClearDay,
   onOpenDetail,
 }: CalendarProps) {
-  const days = buildMonthGrid(month).flat();
-  const rowCount = days.length / 7;
+  const activeKey = monthKey(activeMonth);
+  // `months` is newest-first, so "previous" (older) is a higher index and
+  // "next" (newer) is a lower one — there is no future month to move into.
+  const activeIndex = months.findIndex((month) => monthKey(month) === activeKey);
+  const canGoPrev = activeIndex !== -1 && activeIndex < months.length - 1;
+  const canGoNext = activeIndex > 0;
 
-  /**
-   * Wheel and swipe both step months, but they arrive very differently.
-   *
-   * A trackpad flick fires a burst of small wheel events, so deltas are
-   * accumulated against a threshold and the burst is reset once it goes quiet;
-   * without that, one flick would skip half a year. A cooldown keeps a long
-   * continuous scroll from running away too.
-   */
-  // March 2026 is the start of the history; the current month is the end.
-  // There is nothing to show outside that, so both ends are hard stops.
-  const canGoPrev = isMonthInRange(addMonths(month, -1), todayKey);
-  const canGoNext = isMonthInRange(addMonths(month, 1), todayKey);
-
-  const wheelDelta = useRef(0);
-  const wheelResetAt = useRef(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const sectionRefs = useRef(new Map<string, HTMLDivElement>());
+  const lastKnownKey = useRef(activeKey);
   const lastStepAt = useRef(0);
-  const touchStart = useRef<{ x: number; y: number } | null>(null);
+  /**
+   * True while a programmatic scroll (nav button, keyboard, sidebar) is in
+   * flight, so the scroll-spy observer below doesn't immediately report back
+   * a mid-flight month and fight the very change that caused it to scroll.
+   */
+  const suppressObserver = useRef(false);
+  const suppressTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  function scrollToMonth(key: string) {
+    const container = containerRef.current;
+    const section = sectionRefs.current.get(key);
+    if (container === null || section === undefined) return;
+    suppressObserver.current = true;
+    if (suppressTimeout.current !== null) clearTimeout(suppressTimeout.current);
+    container.scrollTo({ top: section.offsetTop, behavior: "smooth" });
+    // Smooth scrolling keeps firing intersection changes while it travels;
+    // give it time to land before trusting the observer again.
+    suppressTimeout.current = setTimeout(() => {
+      suppressObserver.current = false;
+    }, 500);
+  }
+
+  // Follow external requests to change the active month by scrolling to it —
+  // the inverse of the scroll-spy effect below. Drives the "today" button,
+  // the sidebar's month list, and the keyboard's month-boundary jumps.
+  useEffect(() => {
+    if (activeKey === lastKnownKey.current) return;
+    lastKnownKey.current = activeKey;
+    if (suppressObserver.current) return; // this change came from our own scroll
+    scrollToMonth(activeKey);
+  }, [activeKey]);
+
+  // Scroll-spy: whichever month section sits nearest the top of the visible
+  // area becomes the active one, the same way a real feed's header updates —
+  // wheel, trackpad, and touch scrolling all land here without any handler
+  // of their own, since this is just native scrolling.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (container === null) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (suppressObserver.current) return;
+        const visible = entries.filter((entry) => entry.isIntersecting);
+        if (visible.length === 0) return;
+        visible.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        const key = visible[0].target.getAttribute("data-month-key");
+        if (key === null || key === lastKnownKey.current) return;
+        const found = months.find((month) => monthKey(month) === key);
+        if (found === undefined) return;
+        lastKnownKey.current = key;
+        onActiveMonthChange(found);
+      },
+      // Only the top band counts as "arrived" — a section merely peeking at
+      // the bottom edge shouldn't steal the active state.
+      { root: container, rootMargin: "0px 0px -70% 0px", threshold: 0 },
+    );
+
+    for (const section of sectionRefs.current.values()) observer.observe(section);
+    return () => observer.disconnect();
+  }, [months, onActiveMonthChange]);
+
+  /** Only used by the mobile prev/next/today buttons — scrolling itself is native. */
   function stepMonth(direction: 1 | -1) {
     if (direction === 1 ? !canGoNext : !canGoPrev) return;
     const now = Date.now();
     if (now - lastStepAt.current < 250) return;
     lastStepAt.current = now;
-    if (direction === 1) onNextMonth();
-    else onPrevMonth();
+    const target = months[activeIndex - direction];
+    if (target === undefined) return;
+    onActiveMonthChange(target);
   }
 
-  function handleWheel(event: React.WheelEvent) {
-    const now = Date.now();
-    // A gap between events means a new gesture, not a continuation.
-    if (now > wheelResetAt.current) wheelDelta.current = 0;
-    wheelResetAt.current = now + 220;
-
-    wheelDelta.current += event.deltaY;
-    if (Math.abs(wheelDelta.current) < 40) return;
-    stepMonth(wheelDelta.current > 0 ? 1 : -1);
-    wheelDelta.current = 0;
-  }
-
-  function handleTouchStart(event: React.TouchEvent) {
-    const touch = event.touches[0];
-    touchStart.current = { x: touch.clientX, y: touch.clientY };
-  }
-
-  function handleTouchEnd(event: React.TouchEvent) {
-    const start = touchStart.current;
-    touchStart.current = null;
-    if (start === null) return;
-
-    const touch = event.changedTouches[0];
-    const dx = touch.clientX - start.x;
-    const dy = touch.clientY - start.y;
-    // Horizontal only, and clearly horizontal — a vertical swipe belongs to
-    // the page, and stealing it would break scrolling on small screens.
-    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
-    stepMonth(dx < 0 ? 1 : -1);
-  }
+  const gridProps: SharedGridProps = {
+    todayKey,
+    trainedDays,
+    datesWithPRs,
+    pickerDate,
+    cursorDate,
+    onOpenPicker,
+    onClosePicker,
+    onMarkDay,
+    onClearDay,
+    onOpenDetail,
+  };
 
   return (
-    <section
-      aria-label="Training calendar"
-      className="flex min-h-0 flex-1 flex-col"
-      onWheel={handleWheel}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-    >
+    <section aria-label="Training calendar" className="flex min-h-0 flex-1 flex-col">
       {/* Sequential nav for phones. On desktop the sidebar's month list does
           this job, so showing both would just be two ways to say the same. */}
-      <div className="flex items-center justify-between lg:hidden">
+      <div className="flex shrink-0 items-center justify-between lg:hidden">
         <div className="flex items-center">
           <BracketButton
             label="‹"
-            onClick={onPrevMonth}
+            onClick={() => stepMonth(-1)}
             ariaLabel="Previous month"
             disabled={!canGoPrev}
           />
-          <span className="px-3 text-fg">{monthLabel(month)}</span>
+          <span className="px-3 text-fg">{monthLabel(activeMonth)}</span>
           <BracketButton
             label="›"
-            onClick={onNextMonth}
+            onClick={() => stepMonth(1)}
             ariaLabel="Next month"
             disabled={!canGoNext}
           />
         </div>
-        <BracketButton label="today" onClick={onJumpToToday} ariaLabel="Jump to current month" />
+        <BracketButton
+          label="today"
+          onClick={() => months[0] !== undefined && onActiveMonthChange(months[0])}
+          ariaLabel="Jump to current month"
+        />
       </div>
 
       {/*
-       * Separators only — no frame around the grid. Each cell draws its own
-       * right and bottom rule and the last column/row skip theirs, so the
-       * table is held together by internal lines rather than boxed in.
+       * One continuous top-to-bottom feed, newest month first, at every
+       * breakpoint — scrolling it is what moves between months, so the
+       * motion on screen always matches the gesture. Scroll-snap settles it
+       * on a whole month; nothing pops or swaps outright.
        *
-       * The header is its own grid so the day grid can use auto-rows-fr and
-       * stretch to fill the viewport without the header row stretching too.
-       * Both are grid-cols-7 at the same width, so the columns stay aligned.
+       * On phones each month keeps its natural, compact height so the next
+       * one peeks in below. At `lg` and up each month instead fills the
+       * whole area (`lg:h-full` below, plus `lg:auto-rows-fr` on the grid),
+       * so exactly one is ever on screen at rest.
+       *
+       * overflow-x-hidden is deliberate, not defensive filler: without it,
+       * setting overflow-y to anything but visible makes the browser treat
+       * overflow-x as auto too, and the opacity dimming below can still
+       * round to a sub-pixel width difference — enough to spawn a real
+       * horizontal scrollbar if this isn't pinned shut.
        */}
-      <div className="mt-2 grid grid-cols-7 lg:mt-0">
-        {WEEKDAY_LABELS.map((day, index) => (
-          <div
-            key={day}
-            className={[
-              "min-w-0 truncate border-b border-dotted border-border px-1.5 py-1 text-sm text-dim sm:px-2",
-              index === 6 ? "" : "border-r border-dotted border-border",
-            ].join(" ")}
-          >
-            {day}
-          </div>
-        ))}
-      </div>
-
-      <div className="grid flex-1 auto-rows-fr grid-cols-7">
-        {days.map((key, index) => {
-          const column = index % 7;
-          const row = Math.floor(index / 7);
+      <div
+        ref={containerRef}
+        className="min-h-0 flex-1 snap-y snap-mandatory overflow-x-hidden overflow-y-auto overscroll-contain"
+      >
+        {months.map((month) => {
+          const key = monthKey(month);
+          const isActive = key === activeKey;
 
           return (
-            <DayCell
+            <div
               key={key}
-              date={key}
-              dayNumber={String(parseDateKey(key).getDate()).padStart(2, "0")}
-              inMonth={isSameMonth(key, month)}
-              isToday={key === todayKey}
-              // YYYY-MM-DD sorts lexicographically, so a string compare is a
-              // date compare.
-              isFuture={key > todayKey}
-              isCursor={key === cursorDate}
-              trainedDay={trainedDays[key]}
-              hasPRs={datesWithPRs.has(key)}
-              isPickerOpen={pickerDate === key}
-              isLastColumn={column === 6}
-              isLastRow={row === rowCount - 1}
-              // Popovers near the bottom or right edge open the other way.
-              flipUp={row >= rowCount - 2}
-              alignRight={column >= 5}
-              onOpenPicker={onOpenPicker}
-              onClosePicker={onClosePicker}
-              onMarkDay={onMarkDay}
-              onClearDay={onClearDay}
-              onOpenDetail={onOpenDetail}
-            />
+              data-month-key={key}
+              ref={(el) => {
+                if (el) sectionRefs.current.set(key, el);
+                else sectionRefs.current.delete(key);
+              }}
+              className={[
+                "snap-start pt-3 transition-opacity duration-300 ease-out first:pt-0",
+                "lg:flex lg:h-full lg:flex-col lg:pt-0",
+                isActive ? "opacity-100" : "opacity-60",
+              ].join(" ")}
+            >
+              <WeekdayHeader />
+              <MonthDayGrid month={month} {...gridProps} />
+            </div>
           );
         })}
       </div>

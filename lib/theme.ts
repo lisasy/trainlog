@@ -32,7 +32,8 @@ export const THEME_PRESETS: ThemePreset[] = [
       bg: "#191919",
       fg: "#bbbbbb",
       accent: "#b77e64",
-      dim: "#7d7472",
+      // See app/globals.css: lifted for WCAG AA (was #7d7472, 3.9:1).
+      dim: "#898180",
       border: "#3d3839",
       logged: "#b77e64",
       scheduled: "#46cab2",
@@ -45,7 +46,8 @@ export const THEME_PRESETS: ThemePreset[] = [
       bg: "#0d0b06",
       fg: "#e8c98d",
       accent: "#ffb000",
-      dim: "#8a7550",
+      // Lifted for WCAG AA (was #8a7550, 4.4:1).
+      dim: "#8d7852",
       border: "#2c2417",
       logged: "#ffb000",
       scheduled: "#7dd6cf",
@@ -97,7 +99,8 @@ export const THEME_PRESETS: ThemePreset[] = [
       bg: "#002b36",
       fg: "#93a1a1",
       accent: "#b58900",
-      dim: "#5f7981",
+      // Lifted for WCAG AA (was #5f7981, 3.2:1 - the worst offender).
+      dim: "#7f9295",
       border: "#073642",
       logged: "#b58900",
       scheduled: "#2aa198",
@@ -110,10 +113,39 @@ export const THEME_PRESETS: ThemePreset[] = [
       bg: "#101010",
       fg: "#d4d4d4",
       accent: "#ffffff",
-      dim: "#7a7a7a",
+      // Lifted for WCAG AA (was #7a7a7a, 4.4:1).
+      dim: "#7d7d7d",
       border: "#2a2a2a",
       logged: "#ffffff",
       scheduled: "#8a8a8a",
+    },
+  },
+  {
+    id: "panda",
+    label: "panda",
+    vars: {
+      bg: "#292a2b",
+      fg: "#e6e6e6",
+      accent: "#19f9d8",
+      // Lifted for WCAG AA (was #676b79, 2.7:1 - the worst offender).
+      dim: "#90929c",
+      border: "#222223",
+      logged: "#19f9d8",
+      scheduled: "#b084eb",
+    },
+  },
+  {
+    id: "ayu-dark",
+    label: "ayu dark",
+    vars: {
+      bg: "#10141c",
+      fg: "#bfbdb6",
+      accent: "#e6b450",
+      // Lifted for WCAG AA (was #5a6673, 3.1:1).
+      dim: "#788087",
+      border: "#1b1f29",
+      logged: "#e6b450",
+      scheduled: "#39bae6",
     },
   },
 ];

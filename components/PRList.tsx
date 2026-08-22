@@ -17,7 +17,7 @@ const WEIGHT = "w-[8ch] shrink-0";
 function Weight({ value, muted }: { value: number; muted?: boolean }) {
   return (
     <>
-      <span className={muted ? "text-fg/70" : "text-logged"}>{value}</span>
+      <span className={muted ? "text-fg/90" : "text-logged"}>{value}</span>
       <span className="text-sm text-dim"> lbs</span>
     </>
   );

@@ -34,7 +34,7 @@ export type PRFormProps = {
 };
 
 const FIELD =
-  "w-full min-w-0 appearance-none rounded-none border border-border bg-transparent px-2 py-1.5 text-fg outline-none placeholder:text-dim/60 focus:border-accent";
+  "w-full min-w-0 appearance-none rounded-none border border-border bg-transparent px-2 py-1.5 text-fg outline-none placeholder:text-dim focus:border-accent";
 
 export default function PRForm({
   allEntries,
@@ -119,7 +119,7 @@ export default function PRForm({
                     setExerciseName(name);
                     setShowSuggestions(false);
                   }}
-                  className="w-full cursor-pointer px-2 py-1.5 text-left text-fg/80 hover:bg-fg/10"
+                  className="w-full cursor-pointer px-2 py-1.5 text-left text-fg/90 hover:bg-fg/10"
                 >
                   {name}
                 </button>

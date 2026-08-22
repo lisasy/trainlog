@@ -57,7 +57,7 @@ export default function ThemePicker({
   }
 
   const fieldClass =
-    "w-full min-w-0 appearance-none rounded-none border border-border bg-transparent px-2 py-1.5 text-fg outline-none placeholder:text-dim/60 focus:border-accent";
+    "w-full min-w-0 appearance-none rounded-none border border-border bg-transparent px-2 py-1.5 text-fg outline-none placeholder:text-dim focus:border-accent";
 
   return (
     <>
@@ -100,7 +100,7 @@ export default function ThemePicker({
                     aria-pressed={isActive}
                     className={[
                       "flex w-full cursor-pointer items-center gap-2 px-2 py-2 text-left",
-                      isActive ? "bg-fg/10 text-fg" : "text-fg/70 hover:bg-fg/5",
+                      isActive ? "bg-fg/10 text-fg" : "text-fg/90 hover:bg-fg/5",
                     ].join(" ")}
                   >
                     <span className={isActive ? "text-accent" : "text-dim/40"} aria-hidden>
@@ -168,7 +168,7 @@ export default function ThemePicker({
           </div>
 
           <div className="mt-5 text-sm text-dim">data</div>
-          <p className="mt-1 text-sm text-dim/80">
+          <p className="mt-1 text-sm text-dim">
             this log lives only in this browser. export to move it to another
             device or to back it up.
           </p>
@@ -200,7 +200,7 @@ export default function ThemePicker({
               }}
             />
           </div>
-          <p className="mt-2 text-sm text-dim/80">
+          <p className="mt-2 text-sm text-dim">
             importing replaces everything currently in this browser.
           </p>
 

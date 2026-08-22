@@ -81,10 +81,11 @@ export default function DayDetailSheet({
                   onClick={() => onSelectSplit(split)}
                   aria-pressed={isCurrent}
                   className={[
-                    "cursor-pointer border px-2 py-1.5 focus-visible:outline-none",
+                    "cursor-pointer border px-2 py-1.5",
+                    "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-accent",
                     isCurrent
                       ? "border-border bg-fg/10 text-accent"
-                      : "border-transparent text-fg/60 hover:bg-fg/5",
+                      : "border-transparent text-fg/90 hover:bg-fg/5",
                   ].join(" ")}
                 >
                   <span aria-hidden>[ </span>
@@ -109,7 +110,7 @@ export default function DayDetailSheet({
 
           <div className="mt-5 text-sm text-dim">prs</div>
           {entries.length === 0 ? (
-            <p className="mt-1 text-sm text-dim/70">none attached to this day</p>
+            <p className="mt-1 text-sm text-dim">none attached to this day</p>
           ) : (
             <ul className="mt-1">
               {entries.map((entry) => (

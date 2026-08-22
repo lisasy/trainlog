@@ -61,13 +61,10 @@ export default function Sidebar({
             aria-current={view === name ? "true" : undefined}
             className={[
               "flex w-full cursor-pointer items-baseline gap-2 px-2 py-0.5 text-left transition-colors",
-              "focus-visible:outline-none",
-              view === name ? "bg-fg/10 text-fg" : "text-fg/60 hover:bg-fg/5",
+              "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-accent",
+              view === name ? "bg-fg/10 text-fg" : "text-fg/90 hover:bg-fg/5",
             ].join(" ")}
           >
-            <span className={view === name ? "" : "opacity-50 grayscale"} aria-hidden>
-              {name === "calendar" ? "📅" : "💥"}
-            </span>
             <span className="min-w-0 flex-1 truncate">{name}</span>
           </button>
         ))}
@@ -78,13 +75,13 @@ export default function Sidebar({
         <StreakBadge weeks={streakWeeks} variant="block" />
         <div className="mt-1 flex items-baseline justify-between px-2">
           <span className="text-dim">most popular</span>
-          <span className="text-fg/70">
+          <span className="text-fg/90">
             {topWeekday === null ? "~" : WEEKDAY_LABELS[topWeekday.index]}
           </span>
         </div>
         <div className="flex items-baseline justify-between px-2">
           <span className="text-dim">avg / month</span>
-          <span className="text-fg/70">
+          <span className="text-fg/90">
             {averagePerMonth === null ? "~" : averagePerMonth.toFixed(1)}
           </span>
         </div>
@@ -115,8 +112,8 @@ export default function Sidebar({
               aria-current={isActive ? "true" : undefined}
               className={[
                 "flex w-full cursor-pointer items-baseline gap-2 px-2 py-0.5 text-left transition-colors",
-                "focus-visible:outline-none",
-                isActive ? "bg-fg/10 text-fg" : "text-fg/60 hover:bg-fg/5",
+                "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-accent",
+                isActive ? "bg-fg/10 text-fg" : "text-fg/90 hover:bg-fg/5",
               ].join(" ")}
             >
               {/* Lit when the month has training logged, dark when it doesn't. */}
@@ -134,7 +131,7 @@ export default function Sidebar({
       </nav>
 
       <div className="flex items-baseline justify-between border-t border-dotted border-border px-3 py-1 text-dim">
-        <span>💪 get strong</span>
+        <span>get strong</span>
         <button
           type="button"
           onClick={onOpenTheme}
