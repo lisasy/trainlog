@@ -10,6 +10,8 @@ import { read, write } from "./storage";
 
 export type ThemeVars = {
   bg: string;
+  /** One step lighter than `bg` — card/pill backgrounds, for elevation without a border. */
+  surface: string;
   fg: string;
   accent: string;
   dim: string;
@@ -30,6 +32,7 @@ export const THEME_PRESETS: ThemePreset[] = [
     label: "zenwritten",
     vars: {
       bg: "#191919",
+      surface: "#242424",
       fg: "#bbbbbb",
       accent: "#b77e64",
       // See app/globals.css: lifted for WCAG AA (was #7d7472, 3.9:1).
@@ -44,6 +47,7 @@ export const THEME_PRESETS: ThemePreset[] = [
     label: "amber",
     vars: {
       bg: "#0d0b06",
+      surface: "#1a160f",
       fg: "#e8c98d",
       accent: "#ffb000",
       // Lifted for WCAG AA (was #8a7550, 4.4:1).
@@ -58,6 +62,7 @@ export const THEME_PRESETS: ThemePreset[] = [
     label: "green phosphor",
     vars: {
       bg: "#0a0f0a",
+      surface: "#141c14",
       fg: "#b7d7b0",
       accent: "#33ff66",
       dim: "#5d8562",
@@ -71,6 +76,7 @@ export const THEME_PRESETS: ThemePreset[] = [
     label: "matrix",
     vars: {
       bg: "#000000",
+      surface: "#0d150d",
       fg: "#9ef29e",
       accent: "#00ff41",
       dim: "#3f8a4c",
@@ -84,6 +90,7 @@ export const THEME_PRESETS: ThemePreset[] = [
     label: "ice",
     vars: {
       bg: "#0b1016",
+      surface: "#141c24",
       fg: "#cfe3f2",
       accent: "#6cc7ff",
       dim: "#6d8598",
@@ -97,11 +104,13 @@ export const THEME_PRESETS: ThemePreset[] = [
     label: "solarized",
     vars: {
       bg: "#002b36",
+      // base02 — solarized's own canonical elevated-surface tone.
+      surface: "#073642",
       fg: "#93a1a1",
       accent: "#b58900",
       // Lifted for WCAG AA (was #5f7981, 3.2:1 - the worst offender).
       dim: "#7f9295",
-      border: "#073642",
+      border: "#0a4552",
       logged: "#b58900",
       scheduled: "#2aa198",
     },
@@ -111,6 +120,7 @@ export const THEME_PRESETS: ThemePreset[] = [
     label: "mono",
     vars: {
       bg: "#101010",
+      surface: "#1c1c1c",
       fg: "#d4d4d4",
       accent: "#ffffff",
       // Lifted for WCAG AA (was #7a7a7a, 4.4:1).
@@ -125,6 +135,7 @@ export const THEME_PRESETS: ThemePreset[] = [
     label: "panda",
     vars: {
       bg: "#292a2b",
+      surface: "#323335",
       fg: "#e6e6e6",
       accent: "#19f9d8",
       // Lifted for WCAG AA (was #676b79, 2.7:1 - the worst offender).
@@ -139,6 +150,7 @@ export const THEME_PRESETS: ThemePreset[] = [
     label: "ayu dark",
     vars: {
       bg: "#10141c",
+      surface: "#171c26",
       fg: "#bfbdb6",
       accent: "#e6b450",
       // Lifted for WCAG AA (was #5a6673, 3.1:1).
@@ -146,6 +158,23 @@ export const THEME_PRESETS: ThemePreset[] = [
       border: "#1b1f29",
       logged: "#e6b450",
       scheduled: "#39bae6",
+    },
+  },
+  {
+    id: "gruvbox-dark",
+    label: "gruvbox dark",
+    vars: {
+      bg: "#282828",
+      // bg1 — gruvbox's own canonical elevated-surface tone.
+      surface: "#3c3836",
+      fg: "#ebdbb2",
+      accent: "#b8bb26",
+      dim: "#a89984",
+      // bg2 — one step lighter than surface, same bg/surface/border gradient
+      // every other preset here follows.
+      border: "#504945",
+      logged: "#b8bb26",
+      scheduled: "#83a598",
     },
   },
 ];

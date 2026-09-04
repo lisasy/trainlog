@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Dot } from "lucide-react";
 import { backupFilename, exportBackup, importBackup } from "@/lib/backup";
 import type { PREntry, TrainedDaysMap } from "@/lib/types";
 import { isValidHex, THEME_PRESETS, type ThemeSelection } from "@/lib/theme";
@@ -103,8 +104,11 @@ export default function ThemePicker({
                       isActive ? "bg-fg/10 text-fg" : "text-fg/90 hover:bg-fg/5",
                     ].join(" ")}
                   >
-                    <span className={isActive ? "text-accent" : "text-dim/40"} aria-hidden>
-                      ▪
+                    <span
+                      className={`inline-flex items-center ${isActive ? "text-accent" : "text-dim/40"}`}
+                      aria-hidden
+                    >
+                      <Dot size={16} />
                     </span>
                     <span className="min-w-0 flex-1 truncate">{preset.label}</span>
                     {/* Swatches render from the preset's own values, not from

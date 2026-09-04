@@ -1,30 +1,32 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import NavButton from "@/components/NavButton";
 import Calendar from "@/components/Calendar";
-import DayDetailSheet from "@/components/DayDetailSheet";
-import PREditSheet from "@/components/PREditSheet";
+import MobileDock from "@/components/MobileDock";
+import RightRail from "@/components/RightRail";
+import MonthDropdown from "@/components/MonthDropdown";
 import PRList from "@/components/PRList";
+import type { PRSheet } from "@/components/DayCardContent";
+import type { PRFormInput } from "@/components/PRForm";
 import Sidebar from "@/components/Sidebar";
-import StatsPanel from "@/components/StatsPanel";
 import ThemePicker from "@/components/ThemePicker";
 import {
   isSameMonth,
   monthKey,
   isDateKeyInRange,
   monthListInRange,
-  monthPath,
   parseDateKey,
   shiftDateKey,
   shiftMonthKeepDay,
   startOfMonth,
   todayKey as getTodayKey,
 } from "@/lib/dates";
+import type { View } from "@/lib/views";
 import {
   addPREntry,
   applySeed,
-  datesWithPRs as computeDatesWithPRs,
-  entriesForDate,
   isSeedId,
   loadPREntries,
   loadRemovedSeedIds,
@@ -45,10 +47,8 @@ import {
   applyTrainedSeed,
   clearTrainedDay,
   countTrainedByMonth,
-  averageDaysPerMonth,
   currentStreakWeeks,
   isSeedDate,
-  mostFrequentWeekday,
   loadRemovedSeedDates,
   loadTrainedDays,
   markTrained,
@@ -68,16 +68,13 @@ export default function Home() {
   const [prEntries, setPREntries] = useState<PREntry[]>([]);
   const [todayKey, setTodayKey] = useState<DateKey>("");
   const [month, setMonth] = useState<Date>(() => new Date());
-  const [pickerDate, setPickerDate] = useState<DateKey | null>(null);
-  const [detailDate, setDetailDate] = useState<DateKey | null>(null);
+  const [sheetDate, setSheetDate] = useState<DateKey | null>(null);
   const [theme, setTheme] = useState<ThemeSelection>({ presetId: "zenwritten" });
   const [themeOpen, setThemeOpen] = useState(false);
   const [cursorDate, setCursorDate] = useState<DateKey | null>(null);
-  const [view, setView] = useState<"calendar" | "prs">("calendar");
-  /** Ledger drawer: an entry to edit, a name to prefill, or closed. */
-  const [prSheet, setPRSheet] = useState<
-    { mode: "add"; exerciseName?: string } | { mode: "edit"; id: string } | null
-  >(null);
+  const [view, setView] = useState<View>("calendar");
+  /** Ledger form: an entry to edit, a name to prefill, or closed. */
+  const [prSheet, setPRSheet] = useState<PRSheet | null>(null);
 
   /**
    * Latest cursor/month, readable synchronously.
@@ -101,6 +98,9 @@ export default function Home() {
 
   useEffect(() => {
     viewRef.current = view;
+    // Each form belongs to one view; leaving that view closes it.
+    if (view !== "calendar") setSheetDate(null);
+    if (view !== "prs") setPRSheet(null);
   }, [view]);
 
   useEffect(() => {
@@ -134,7 +134,7 @@ export default function Home() {
    */
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (pickerDate !== null || detailDate !== null || themeOpen) return;
+      if (sheetDate !== null || themeOpen) return;
       if (viewRef.current !== "calendar") return;
       if (event.metaKey || event.ctrlKey || event.altKey) return;
 
@@ -174,7 +174,7 @@ export default function Home() {
         case "Enter":
         case " ":
           event.preventDefault();
-          setPickerDate(anchor);
+          setSheetDate(anchor);
           return;
         default:
           return;
@@ -201,7 +201,7 @@ export default function Home() {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [detailDate, pickerDate, themeOpen, todayKey]);
+  }, [sheetDate, themeOpen, todayKey]);
 
   const commitDays = useCallback((next: TrainedDaysMap) => {
     setTrainedDays(next);
@@ -213,23 +213,12 @@ export default function Home() {
     savePREntries(next);
   }, []);
 
-  function handleMarkDay(date: DateKey, split: Split) {
-    commitDays(markTrained(trainedDays, date, split));
-    setPickerDate(null);
-  }
-
   function handleClearDay(date: DateKey) {
     // Tombstone seeded days, or the seed would restore them next load.
     if (isSeedDate(date)) {
       saveRemovedSeedDates([...loadRemovedSeedDates(), date]);
     }
     commitDays(clearTrainedDay(trainedDays, date));
-    setPickerDate(null);
-  }
-
-  function handleOpenDetail(date: DateKey) {
-    setPickerDate(null);
-    setDetailDate(date);
   }
 
   function commitTheme(next: ThemeSelection) {
@@ -255,176 +244,146 @@ export default function Home() {
   }
 
   const countsByMonth = useMemo(() => countTrainedByMonth(trainedDays), [trainedDays]);
-  const datesWithPRs = useMemo(() => computeDatesWithPRs(prEntries), [prEntries]);
   const currentMonth = mounted ? startOfMonth(parseDateKey(todayKey)) : month;
   const months = useMemo(() => monthListInRange(todayKey), [todayKey]);
+
+  // Desktop header's month nav: `months` is newest-first, so index 0 is the
+  // current month and higher indices are further in the past.
+  const activeMonthIndex = months.findIndex((candidate) => monthKey(candidate) === monthKey(month));
+  const canGoPrevMonth = activeMonthIndex !== -1 && activeMonthIndex < months.length - 1;
+  const canGoNextMonth = activeMonthIndex > 0;
+
+  function goToMonth(next: Date) {
+    setMonth(next);
+    setView("calendar");
+  }
+
+  function stepMonth(direction: 1 | -1) {
+    if (direction === 1 ? !canGoNextMonth : !canGoPrevMonth) return;
+    const target = months[activeMonthIndex - direction];
+    if (target !== undefined) goToMonth(target);
+  }
   const streakWeeks = useMemo(
     () => currentStreakWeeks(trainedDays, todayKey),
     [trainedDays, todayKey],
   );
-  const topWeekday = useMemo(
-    () => mostFrequentWeekday(trainedDays, todayKey),
-    [trainedDays, todayKey],
-  );
-  const averagePerMonth = useMemo(
-    () => averageDaysPerMonth(trainedDays, todayKey),
-    [trainedDays, todayKey],
-  );
   const monthCount = Object.keys(trainedDays).filter((key) => isSameMonth(key, month)).length;
-  const totalTrained = Object.keys(trainedDays).length;
+
+  // The day editor + PR form, shared by the phone dock and the desktop rail.
+  const dayCardHandlers = {
+    sheetDate: view === "calendar" ? sheetDate : null,
+    onSelectSplit: (date: DateKey, split: Split) =>
+      commitDays(markTrained(trainedDays, date, split)),
+    onClearDay: handleClearDay,
+    onAddPR: (date: DateKey, input: { exerciseName: string; weight: number; note?: string }) =>
+      commitPRs(addPREntry(prEntries, { ...input, date })),
+    onRemovePR: handleRemovePR,
+    onCloseSheet: () => setSheetDate(null),
+    prSheet: view === "prs" ? prSheet : null,
+    onSubmitPR: (input: PRFormInput) => {
+      if (prSheet?.mode === "edit") {
+        commitPRs(updatePREntry(prEntries, prSheet.id, input));
+        setPRSheet(null);
+      } else {
+        commitPRs(addPREntry(prEntries, input));
+      }
+    },
+    onDeletePR: (id: string) => {
+      handleRemovePR(id);
+      setPRSheet(null);
+    },
+    onClosePR: () => setPRSheet(null),
+  };
 
   return (
     <div className="flex h-dvh w-full">
-      <Sidebar
-        months={months}
-        activeMonth={month}
-        countsByMonth={countsByMonth}
-        currentMonthKey={monthKey(currentMonth)}
-        onSelectMonth={(next) => {
-          // Picking a month is a calendar action; showing it while the ledger
-          // is open would look like nothing happened.
-          setMonth(next);
-          setView("calendar");
-        }}
-        onJumpToToday={() => {
-          jumpToToday();
-          setView("calendar");
-        }}
-        onOpenTheme={() => setThemeOpen(true)}
-        view={view}
-        onSelectView={setView}
-        streakWeeks={streakWeeks}
-        topWeekday={topWeekday}
-        averagePerMonth={averagePerMonth}
-      />
+      <Sidebar onOpenTheme={() => setThemeOpen(true)} view={view} onSelectView={setView} />
 
-      <main className="flex h-dvh min-w-0 flex-1 flex-col px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6">
-        {/* h-11 + a dotted bottom border, identical to the sidebar's title bar,
-            so the two chrome rules read as one line across the whole top. */}
-        <header className="flex h-11 shrink-0 items-baseline justify-between gap-3 border-b border-dotted border-border pt-2">
-          <span className="flex min-w-0 items-baseline overflow-hidden whitespace-nowrap">
+      <main className="relative flex h-dvh min-w-0 flex-1 flex-col px-4 pt-[env(safe-area-inset-top)] pb-0 sm:px-6 lg:pt-0 lg:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        {/* Desktop only — phones navigate from the bottom nav and the month
+            row above the calendar, so this whole bar is gratuitous there. */}
+        <header className="hidden h-11 shrink-0 items-center justify-between gap-3 pt-2 lg:flex">
+          <span className="flex items-center gap-2">
             <span className="text-dim">:</span>
-            {/* The title lives in the sidebar once there is one; on phones the
-                header carries it instead. */}
-            <span className="truncate text-accent glow lg:hidden">trainlog</span>
-            <span className="hidden text-accent glow lg:inline">{monthPath(month)}</span>
-            <span
-              className="cursor-block ml-1.5 inline-block h-[0.95em] w-[0.55em] shrink-0 translate-y-[0.1em] bg-accent"
-              aria-hidden
+            <NavButton
+              label={<ChevronLeft size={16} />}
+              onClick={() => stepMonth(-1)}
+              ariaLabel="Previous month"
+              disabled={!canGoPrevMonth}
+            />
+            <MonthDropdown
+              months={months}
+              activeMonth={month}
+              countsByMonth={countsByMonth}
+              currentMonthKey={monthKey(currentMonth)}
+              onSelectMonth={goToMonth}
+            />
+            <NavButton
+              label={<ChevronRight size={16} />}
+              onClick={() => stepMonth(1)}
+              ariaLabel="Next month"
+              disabled={!canGoNextMonth}
+            />
+            <NavButton
+              label="today"
+              onClick={() => {
+                jumpToToday();
+                setView("calendar");
+              }}
+              ariaLabel="Jump to current month"
             />
           </span>
-          {/*
-           * No streak badge here on phones: the mobile stats panel right
-           * below the calendar already leads with it, and at the narrowest
-           * supported width (320px) this side has just enough room for the
-           * view toggle and theme link without the title on the left having
-           * to shrink into overlap.
-           */}
-          <span className="flex shrink-0 items-baseline gap-3 text-dim">
-            <span className="hidden sm:inline">{mounted ? `${monthCount} trained` : "…"}</span>
-            <span className="flex shrink-0 items-center gap-1 lg:hidden" role="group" aria-label="View">
-              {(["calendar", "prs"] as const).map((name, index) => (
-                <span key={name} className="flex items-center gap-1">
-                  {index > 0 ? <span className="text-dim/50" aria-hidden>|</span> : null}
-                  <button
-                    type="button"
-                    onClick={() => setView(name)}
-                    aria-current={view === name ? "true" : undefined}
-                    className={[
-                      "cursor-pointer transition-colors focus-visible:outline-none",
-                      view === name ? "text-accent" : "text-dim hover:text-accent focus-visible:text-accent",
-                    ].join(" ")}
-                  >
-                    {name}
-                  </button>
-                </span>
-              ))}
-            </span>
-            <button
-              type="button"
-              onClick={() => setThemeOpen(true)}
-              className="link cursor-pointer transition-colors hover:text-accent focus-visible:text-accent focus-visible:outline-none lg:hidden"
-            >
-              theme
-            </button>
-          </span>
+          <span className="shrink-0 text-dim">{mounted ? `${monthCount} trained` : "…"}</span>
         </header>
 
         <div className="flex min-h-0 flex-1 flex-col py-3 sm:py-4">
-          {mounted && view === "prs" ? (
+          {!mounted ? (
+            <p className="text-dim">loading…</p>
+          ) : view === "prs" ? (
             <PRList
               entries={prEntries}
               onAddPR={(exerciseName) => setPRSheet({ mode: "add", exerciseName })}
               onEditPR={handleEditPR}
             />
-          ) : mounted ? (
+          ) : view === "splits" ? (
+            <div className="flex flex-1 items-center justify-center text-dim">splits — not built yet</div>
+          ) : view === "gallery" ? (
+            <div className="flex flex-1 items-center justify-center text-dim">gallery — not built yet</div>
+          ) : (
             <div className="flex min-h-0 flex-1 flex-col">
-              <div className="flex h-[52dvh] min-h-0 shrink-0 flex-col lg:h-auto lg:flex-1">
-                <Calendar
-                  months={months}
-                  activeMonth={month}
-                  todayKey={todayKey}
-                  trainedDays={trainedDays}
-                  datesWithPRs={datesWithPRs}
-                  pickerDate={pickerDate}
-                  cursorDate={cursorDate}
-                  onActiveMonthChange={setMonth}
-                  onOpenPicker={setPickerDate}
-                  onClosePicker={() => setPickerDate(null)}
-                  onMarkDay={handleMarkDay}
-                  onClearDay={handleClearDay}
-                  onOpenDetail={handleOpenDetail}
-                />
-              </div>
-              <StatsPanel
-                streakWeeks={streakWeeks}
-                topWeekday={topWeekday}
-                averagePerMonth={averagePerMonth}
-                prEntries={prEntries}
-                onEditPR={handleEditPR}
-                onAddPR={() => setPRSheet({ mode: "add" })}
-                onViewAllPRs={() => setView("prs")}
+              <Calendar
+                months={months}
+                activeMonth={month}
+                todayKey={todayKey}
+                trainedDays={trainedDays}
+                cursorDate={cursorDate}
+                onActiveMonthChange={setMonth}
+                onTap={setSheetDate}
               />
             </div>
-          ) : (
-            <p className="text-dim">loading…</p>
           )}
         </div>
 
-        <div className="border-t border-dotted border-border">
-          <div className="flex items-baseline justify-between py-1 text-dim">
-            <span>{mounted ? `${totalTrained} days logged` : "…"}</span>
-            <span className="hidden sm:inline lg:hidden">tap to mark · hold for details</span>
-            <span className="hidden lg:inline">←→ month · ↑↓ week · h l day · enter to mark</span>
-          </div>
-        </div>
+        <MobileDock
+          calendarView={view === "calendar"}
+          streakWeeks={streakWeeks}
+          prEntries={prEntries}
+          trainedDays={trainedDays}
+          todayKey={todayKey}
+          onOpenTheme={() => setThemeOpen(true)}
+          view={view}
+          onSelectView={setView}
+          {...dayCardHandlers}
+        />
       </main>
 
-      {prSheet !== null ? (
-        <PREditSheet
-          entry={prSheet.mode === "edit" ? prEntries.find((e) => e.id === prSheet.id) : undefined}
-          initialExerciseName={prSheet.mode === "add" ? prSheet.exerciseName : undefined}
-          allEntries={prEntries}
-          todayKey={todayKey}
-          onSubmit={(input) => {
-            if (prSheet.mode === "edit") {
-              commitPRs(updatePREntry(prEntries, prSheet.id, input));
-              setPRSheet(null);
-            } else {
-              commitPRs(addPREntry(prEntries, input));
-            }
-          }}
-          onDelete={
-            prSheet.mode === "edit"
-              ? () => {
-                  handleRemovePR(prSheet.id);
-                  setPRSheet(null);
-                }
-              : undefined
-          }
-          onClose={() => setPRSheet(null)}
-        />
-      ) : null}
+      <RightRail
+        streakWeeks={streakWeeks}
+        prEntries={prEntries}
+        trainedDays={trainedDays}
+        todayKey={todayKey}
+        {...dayCardHandlers}
+      />
 
       {themeOpen ? (
         <ThemePicker
@@ -442,22 +401,6 @@ export default function Home() {
             savePREntries(merged);
           }}
           onClose={() => setThemeOpen(false)}
-        />
-      ) : null}
-
-      {detailDate !== null ? (
-        <DayDetailSheet
-          date={detailDate}
-          trainedDay={trainedDays[detailDate]}
-          entries={entriesForDate(prEntries, detailDate)}
-          allEntries={prEntries}
-          onSelectSplit={(split) => commitDays(markTrained(trainedDays, detailDate, split))}
-          onClearDay={() => handleClearDay(detailDate)}
-          onAddPR={(input) =>
-            commitPRs(addPREntry(prEntries, { ...input, date: detailDate }))
-          }
-          onRemovePR={handleRemovePR}
-          onClose={() => setDetailDate(null)}
         />
       ) : null}
     </div>

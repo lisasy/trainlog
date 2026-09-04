@@ -43,3 +43,6 @@ next-env.d.ts
 # Local dev harness pages — never commit or deploy these
 /public/_*.html
 .next-check
+
+# Claude Code worktrees — other sessions' own working copies, not app code
+/.claude/worktrees/

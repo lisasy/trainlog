@@ -1,9 +1,8 @@
 @import "tailwindcss";
 
 /**
- * Theme variables. Every color in the app resolves to one of these five, so
- * the theme picker (feature 3) only has to swap these values on :root.
- * Default preset: amber.
+ * Theme variables. Every color in the app resolves to one of these, so the
+ * theme picker only has to swap these values on :root.
  */
 :root {
   /*
@@ -12,6 +11,7 @@
    * `--dim` is ansi 8 lifted until it's legible as secondary UI text.
    */
   --bg: #191919;
+  --surface: #242424;
   --fg: #bbbbbb;
   --accent: #b77e64;
   /* Lifted from #7d7472 - the original only hit 3.9:1 on --bg, failing WCAG
@@ -32,6 +32,7 @@
 
 @theme inline {
   --color-bg: var(--bg);
+  --color-surface: var(--surface);
   --color-fg: var(--fg);
   --color-accent: var(--accent);
   --color-dim: var(--dim);
@@ -113,6 +114,13 @@ body {
   [data-month-key] {
     transition-duration: 0ms !important;
   }
+
+  /* PRESSABLE's press-scale (lib/styles.ts) is motion; the brightness dim
+     alone still gives pressed feedback. */
+  button:active {
+    transform: none !important;
+    scale: 1 !important;
+  }
 }
 
 /* Subtle phosphor glow on accent text. One touch, not everywhere. */
@@ -121,7 +129,7 @@ body {
 }
 
 .glow-box {
-  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 22%, transparent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 30%, transparent);
 }
 
 /*
@@ -145,13 +153,8 @@ body {
 }
 
 /*
- * Calendar cells are tap targets, not text. Suppresses the iOS text-selection
- * and callout menus that would otherwise fire on the long-press gesture.
- */
-/*
- * Hover tooltip. Square by design — no border radius anywhere in this UI.
- * Gated behind `hover: hover` so it never sticks open after a tap on touch,
- * where :hover latches until you tap elsewhere.
+ * Hover tooltip. Gated behind `hover: hover` so it never sticks open after a
+ * tap on touch, where :hover latches until you tap elsewhere.
  */
 .tip {
   opacity: 0;
@@ -188,4 +191,49 @@ body {
   user-select: none;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+}
+
+/*
+ * The frosted layer the phone's stats/nav dock floats on. A blur plus a
+ * bottom-weighted fill, both masked away toward the top so the calendar
+ * behind it reads clearly above the dock and dissolves into frost below.
+ */
+.dock-veil {
+  background: linear-gradient(
+    to top,
+    var(--bg) 40%,
+    color-mix(in srgb, var(--bg) 82%, transparent) 70%,
+    transparent
+  );
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  -webkit-mask-image: linear-gradient(to top, #000 58%, transparent);
+  mask-image: linear-gradient(to top, #000 58%, transparent);
+}
+
+/*
+ * Easter egg: tapping the year heatmap sends a ripple of light out from the
+ * touch point across every logged day. Pure transform/opacity so it stays on
+ * the compositor; the stagger is a per-cell custom property set in JS.
+ */
+@keyframes heatmap-shimmer {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  40% {
+    filter: brightness(1.4);
+  }
+}
+
+.heatmap-shimmer {
+  animation: heatmap-shimmer 500ms ease-out both;
+  animation-delay: var(--shimmer-delay, 0ms);
+  will-change: filter;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heatmap-shimmer {
+    animation: none;
+  }
 }

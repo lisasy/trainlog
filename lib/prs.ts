@@ -78,11 +78,6 @@ export function entriesForDate(entries: PREntry[], date: DateKey): PREntry[] {
   return entries.filter((entry) => entry.date === date);
 }
 
-/** Dates that have at least one PR attached, for the calendar's marker. */
-export function datesWithPRs(entries: PREntry[]): Set<DateKey> {
-  return new Set(entries.map((entry) => entry.date));
-}
-
 /**
  * Distinct exercise names, most recently used first — the autocomplete source.
  * Matching is case-insensitive, but the casing the user typed is preserved.
@@ -175,14 +170,21 @@ export function saveRemovedSeedIds(ids: string[]): void {
  * Ids are content-derived, so this is idempotent across reloads and picks up
  * entries added to the seed file later without touching anything the user
  * created in the app.
+ *
+ * Seed rows whose ids are no longer in the file (usually from a mid-list
+ * insert that shifted the index suffix) are dropped so they don't duplicate.
  */
 export function applySeed(entries: PREntry[], removedIds: readonly string[]): PREntry[] {
-  const present = new Set(entries.map((entry) => entry.id));
+  const canonical = seedEntries();
+  const canonicalIds = new Set(canonical.map((entry) => entry.id));
   const removed = new Set(removedIds);
-  const missing = seedEntries().filter(
+  const kept = entries.filter((entry) => !isSeedId(entry.id) || canonicalIds.has(entry.id));
+  const present = new Set(kept.map((entry) => entry.id));
+  const missing = canonical.filter(
     (entry) => !present.has(entry.id) && !removed.has(entry.id),
   );
-  return missing.length === 0 ? entries : [...entries, ...missing];
+  if (missing.length === 0 && kept.length === entries.length) return entries;
+  return [...kept, ...missing];
 }
 
 export { isSeedId };

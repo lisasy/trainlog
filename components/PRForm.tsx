@@ -34,7 +34,13 @@ export type PRFormProps = {
 };
 
 const FIELD =
-  "w-full min-w-0 appearance-none rounded-none border border-border bg-transparent px-2 py-1.5 text-fg outline-none placeholder:text-dim focus:border-accent";
+  "w-full min-w-0 appearance-none rounded-lg border border-border bg-bg/40 px-3 py-2 text-fg outline-none transition-colors placeholder:text-dim focus:border-accent";
+
+const PRIMARY =
+  "cursor-pointer rounded-lg border border-accent px-4 py-2 text-accent transition-colors hover:bg-accent hover:text-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent disabled:cursor-not-allowed disabled:border-border disabled:text-dim/40 disabled:hover:bg-transparent disabled:hover:text-dim/40";
+
+const GHOST =
+  "cursor-pointer rounded-lg border border-transparent px-4 py-2 text-dim transition-colors hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent";
 
 export default function PRForm({
   allEntries,
@@ -44,7 +50,7 @@ export default function PRForm({
   initialWeight,
   initialNote,
   initialDate,
-  submitLabel = "[ add ]",
+  submitLabel = "add",
   resetAfterSubmit = true,
   autoFocus,
   onSubmit,
@@ -110,7 +116,7 @@ export default function PRForm({
           className={FIELD}
         />
         {showSuggestions && suggestions.length > 0 ? (
-          <ul className="absolute inset-x-0 top-full z-20 max-h-48 overflow-y-auto border border-t-0 border-border bg-bg">
+          <ul className="absolute inset-x-0 top-full z-20 mt-1 max-h-48 overflow-y-auto rounded-lg border border-border bg-bg">
             {suggestions.map((name) => (
               <li key={name}>
                 <button
@@ -119,7 +125,7 @@ export default function PRForm({
                     setExerciseName(name);
                     setShowSuggestions(false);
                   }}
-                  className="w-full cursor-pointer px-2 py-1.5 text-left text-fg/90 hover:bg-fg/10"
+                  className="w-full cursor-pointer px-3 py-2 text-left text-fg/90 hover:bg-fg/10"
                 >
                   {name}
                 </button>
@@ -178,22 +184,13 @@ export default function PRForm({
         className={FIELD}
       />
 
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={!canAdd}
-          className="cursor-pointer border border-border px-2 py-1.5 text-fg hover:border-accent hover:text-accent focus-visible:border-accent focus-visible:outline-none disabled:cursor-not-allowed disabled:border-border disabled:text-dim/50 disabled:hover:text-dim/50"
-        >
+      <div className="mt-1 flex gap-2">
+        <button type="button" onClick={handleSubmit} disabled={!canAdd} className={PRIMARY}>
           {submitLabel}
         </button>
         {onCancel ? (
-          <button
-            type="button"
-            onClick={onCancel}
-            className="cursor-pointer border border-border px-2 py-1.5 text-dim hover:border-accent hover:text-accent"
-          >
-            [ done ]
+          <button type="button" onClick={onCancel} className={GHOST}>
+            done
           </button>
         ) : null}
       </div>

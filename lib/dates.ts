@@ -129,9 +129,41 @@ export function dayLabel(key: DateKey): string {
   return `${WEEKDAY_LABELS[parseDateKey(key).getDay()]} ${key}`;
 }
 
+/** Human date for the stats card, e.g. "sat aug 29, 2026". */
+export function fullDateLabel(key: DateKey): string {
+  const date = parseDateKey(key);
+  return `${WEEKDAY_LABELS[date.getDay()]} ${MONTH_LABELS[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+}
+
 export function isSameMonth(key: DateKey, month: Date): boolean {
   const date = parseDateKey(key);
   return date.getFullYear() === month.getFullYear() && date.getMonth() === month.getMonth();
+}
+
+/**
+ * Build a full year as whole Sunday-start weeks (columns), padded with days
+ * from the adjacent years so every week has 7 cells — the GitHub-style
+ * heatmap's shape. Same idea as `buildMonthGrid`, just spanning a year.
+ */
+export function buildYearGrid(year: number): DateKey[][] {
+  const first = new Date(year, 0, 1);
+  const last = new Date(year, 11, 31);
+  const leading = first.getDay();
+  const trailing = 6 - last.getDay();
+  const daysInYear = Math.round((last.getTime() - first.getTime()) / 86400000) + 1;
+  const weekCount = (leading + daysInYear + trailing) / 7;
+
+  const weeks: DateKey[][] = [];
+  const cursor = new Date(year, 0, 1 - leading);
+  for (let w = 0; w < weekCount; w += 1) {
+    const week: DateKey[] = [];
+    for (let d = 0; d < 7; d += 1) {
+      week.push(toDateKey(cursor));
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    weeks.push(week);
+  }
+  return weeks;
 }
 
 /**

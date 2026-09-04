@@ -13,7 +13,3 @@
 export function statusTextClass(isFuture: boolean): string {
   return isFuture ? "text-scheduled" : "text-logged";
 }
-
-export function statusTintClass(isFuture: boolean): string {
-  return isFuture ? "bg-scheduled/10" : "bg-logged/10";
-}

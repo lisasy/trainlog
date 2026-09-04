@@ -1,5 +1,6 @@
 "use client";
 
+import { Dot } from "lucide-react";
 import { groupByExercise } from "@/lib/prs";
 import type { PREntry } from "@/lib/types";
 
@@ -31,14 +32,14 @@ export default function PRList({ entries, onAddPR, onEditPR }: PRListProps) {
   const groups = groupByExercise(entries);
 
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto">
+    <div className="min-h-0 flex-1 overflow-y-auto pb-[16dvh] lg:pb-0">
       <div className="mb-5">
         <button
           type="button"
           onClick={() => onAddPR()}
-          className="cursor-pointer text-dim hover:text-accent focus-visible:text-accent focus-visible:outline-none"
+          className="cursor-pointer rounded-lg border border-border px-3 py-2 text-dim transition-colors hover:border-accent hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
         >
-          [ + add pr ]
+          + add pr
         </button>
       </div>
 
@@ -61,9 +62,9 @@ export default function PRList({ entries, onAddPR, onEditPR }: PRListProps) {
                   type="button"
                   onClick={() => onAddPR(group.exerciseName)}
                   aria-label={`Add a ${group.exerciseName} pr`}
-                  className="cursor-pointer hover:text-accent focus-visible:text-accent focus-visible:outline-none"
+                  className="cursor-pointer text-lg leading-none text-dim transition-colors hover:text-accent focus-visible:text-accent focus-visible:outline-none"
                 >
-                  [+]
+                  +
                 </button>
               </span>
             </div>
@@ -83,13 +84,13 @@ export default function PRList({ entries, onAddPR, onEditPR }: PRListProps) {
                         isCurrent ? "bg-fg/5" : "",
                       ].join(" ")}
                     >
-                      {/* A non-breaking space, so the empty marker still
-                          occupies its column and the dates stay aligned. */}
+                      {/* Empty when not current — the marker still occupies
+                          its column via MARKER, so the dates stay aligned. */}
                       <span
-                        className={`${MARKER} ${isCurrent ? "text-logged" : "text-dim/50"}`}
+                        className={`${MARKER} inline-flex items-center ${isCurrent ? "text-logged" : "text-dim/50"}`}
                         aria-hidden
                       >
-                        {isCurrent ? "▪" : " "}
+                        {isCurrent ? <Dot size={16} /> : null}
                       </span>
                       <span className={`${DATE} text-dim`}>
                         {entry.date === "" ? "—" : entry.date}

@@ -68,6 +68,12 @@ export const PR_SEED: SeedEntry[] = [
   { exerciseName: "rear delt machine", weight: 60, date: UNDATED },
 
   { exerciseName: "shoulder press", weight: 25, date: "2026-06-27" },
+
+  // Appended: inserting earlier in this list would shift seed ids and
+  // duplicate rows already stored in the browser.
+  { exerciseName: "deadlift", weight: 175, date: "2026-09-04" },
+  { exerciseName: "hip thrust", weight: 145, date: "2026-09-03" },
+  { exerciseName: "barbell squat", weight: 85, date: "2026-09-01" },
 ];
 
 /**
@@ -192,6 +198,13 @@ export const TRAINED_SEED: Record<string, string> = {
   "2026-08-22": "lower",
   "2026-08-24": "pull",
   "2026-08-25": "lower",
+
+  // Past the original transcription cutoff so the current month isn't blank.
+  "2026-09-01": "pull",
+  "2026-09-03": "lower",
+  "2026-09-04": "push",
+  "2026-09-06": "lower",
+  "2026-09-08": "pull",
 };
 
 export function seedTrainedDays(): TrainedDaysMap {
