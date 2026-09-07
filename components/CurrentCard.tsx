@@ -72,26 +72,27 @@ export default function CurrentCard({
   fill = false,
   showStats = true,
   scrollClassName,
+  themeOpen,
+  prSheet,
+  sheetDate,
+  onCloseTheme,
+  onClosePR,
+  onCloseSheet,
   ...props
 }: CurrentCardProps) {
-  const body = cardBody({
-    themeOpen: props.themeOpen,
-    prSheet: props.prSheet,
-    sheetDate: props.sheetDate,
-    showStats,
-  });
+  const body = cardBody({ themeOpen, prSheet, sheetDate, showStats });
 
   useEffect(() => {
     if (body === null || body === "stats") return;
     function onKeyDown(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
-      if (props.themeOpen) props.onCloseTheme();
-      else if (props.prSheet !== null) props.onClosePR();
-      else props.onCloseSheet();
+      if (themeOpen) onCloseTheme();
+      else if (prSheet !== null) onClosePR();
+      else onCloseSheet();
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [body, props.themeOpen, props.prSheet, props.onCloseTheme, props.onClosePR, props.onCloseSheet]);
+  }, [body, themeOpen, prSheet, onCloseTheme, onClosePR, onCloseSheet]);
 
   if (body === null) return null;
 
@@ -113,35 +114,35 @@ export default function CurrentCard({
         onSelectPreset={props.onSelectPreset}
         onSetAccent={props.onSetAccent}
         onImported={props.onImported}
-        onClose={props.onCloseTheme}
+        onClose={onCloseTheme}
         fill={fill}
         scrollClassName={scrollClassName}
       />
     );
-  } else if (body === "pr" && props.prSheet !== null) {
+  } else if (body === "pr" && prSheet !== null) {
     inner = (
       <PRFormView
-        sheet={props.prSheet}
+        sheet={prSheet}
         prEntries={props.prEntries}
         todayKey={props.todayKey}
         onSubmit={props.onSubmitPR}
         onDelete={props.onDeletePR}
-        onClose={props.onClosePR}
+        onClose={onClosePR}
         fill={fill}
         scrollClassName={scrollClassName}
       />
     );
-  } else if (body === "day" && props.sheetDate !== null) {
+  } else if (body === "day" && sheetDate !== null) {
     inner = (
       <DayFormView
-        date={props.sheetDate}
+        date={sheetDate}
         prEntries={props.prEntries}
         trainedDays={props.trainedDays}
         onSelectSplit={props.onSelectSplit}
         onClearDay={props.onClearDay}
         onAddPR={props.onAddPR}
         onRemovePR={props.onRemovePR}
-        onClose={props.onCloseSheet}
+        onClose={onCloseSheet}
         fill={fill}
         scrollClassName={scrollClassName}
       />
