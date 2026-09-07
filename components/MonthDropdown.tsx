@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronUp, Dot } from "lucide-react";
-import { monthKey, monthNameYear, monthPath } from "@/lib/dates";
+import { ChevronDown, ChevronRight, ChevronUp, Dot } from "lucide-react";
+import { monthFullName, monthKey, monthNameYear, monthPath } from "@/lib/dates";
+import { PRESSABLE } from "@/lib/styles";
 
 export type MonthDropdownProps = {
   /** Newest first. */
@@ -11,6 +12,8 @@ export type MonthDropdownProps = {
   countsByMonth: Record<string, number>;
   currentMonthKey: string;
   onSelectMonth: (month: Date) => void;
+  /** `title` is the phone calendar's large month name. */
+  variant?: "path" | "title";
 };
 
 export default function MonthDropdown({
@@ -19,6 +22,7 @@ export default function MonthDropdown({
   countsByMonth,
   currentMonthKey,
   onSelectMonth,
+  variant = "path",
 }: MonthDropdownProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -47,11 +51,25 @@ export default function MonthDropdown({
         onClick={() => setOpen((value) => !value)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className="cursor-pointer text-accent glow transition-colors focus-visible:outline-none"
+        className={
+          variant === "title"
+            ? [
+                "inline-flex items-center gap-1 text-2xl leading-none text-fg",
+                PRESSABLE,
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent",
+              ].join(" ")
+            : "cursor-pointer text-accent glow transition-colors focus-visible:outline-none"
+        }
       >
-        {monthPath(activeMonth)}
-        <span className="ml-1 inline-flex align-middle text-dim" aria-hidden>
-          {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        {variant === "title" ? monthFullName(activeMonth) : monthPath(activeMonth)}
+        <span className="inline-flex text-dim" aria-hidden>
+          {variant === "title" ? (
+            open ? <ChevronDown size={18} /> : <ChevronRight size={18} />
+          ) : open ? (
+            <ChevronUp size={14} />
+          ) : (
+            <ChevronDown size={14} />
+          )}
         </span>
       </button>
 

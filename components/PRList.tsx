@@ -1,13 +1,24 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { Dot } from "lucide-react";
 import { groupByExercise } from "@/lib/prs";
+import {
+  exerciseInCategory,
+  PR_CATEGORIES,
+  PR_CATEGORY_LABELS,
+  prCardDate,
+  type PRCategory,
+} from "@/lib/prCategories";
+import { PRESSABLE } from "@/lib/styles";
 import type { PREntry } from "@/lib/types";
+import ThemeFaceButton from "./ThemeFaceButton";
 
 export type PRListProps = {
   entries: PREntry[];
   onAddPR: (exerciseName?: string) => void;
   onEditPR: (entry: PREntry) => void;
+  onOpenTheme: () => void;
 };
 
 /** Shared column widths, so every row's date and weight line up exactly. */
@@ -18,99 +29,178 @@ const WEIGHT = "w-[8ch] shrink-0";
 function Weight({ value, muted }: { value: number; muted?: boolean }) {
   return (
     <>
-      <span className={muted ? "text-fg/90" : "text-logged"}>{value}</span>
+      <span className={muted ? "text-fg/90" : "text-accent"}>{value}</span>
       <span className="text-sm text-dim"> lbs</span>
     </>
   );
 }
 
 /**
- * The PR ledger: one group per exercise, newest first, current lift at the top
- * of its group — the same shape as the notes-app log this replaces.
+ * PR screen: recent wins, muscle-group chips, then the ledger. Phone chrome
+ * matches the calendar (title + theme face). Desktop title sits in the
+ * content column next to the sidebar nav.
  */
-export default function PRList({ entries, onAddPR, onEditPR }: PRListProps) {
-  const groups = groupByExercise(entries);
+export default function PRList({ entries, onAddPR, onEditPR, onOpenTheme }: PRListProps) {
+  const [category, setCategory] = useState<PRCategory>("all");
+  const groups = useMemo(() => groupByExercise(entries), [entries]);
+  const visible = useMemo(
+    () => groups.filter((group) => exerciseInCategory(group.exerciseName, category)),
+    [groups, category],
+  );
+  const wins = groups.filter((group) => group.current.date !== "").slice(0, 8);
 
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto pb-[16dvh] lg:pb-0">
-      <div className="mb-5">
-        <button
-          type="button"
-          onClick={() => onAddPR()}
-          className="cursor-pointer rounded-lg border border-border px-3 py-2 text-dim transition-colors hover:border-accent hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
-        >
-          + add pr
-        </button>
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex shrink-0 items-center justify-between pb-3 lg:hidden">
+        <h1 className="text-fg">PRs</h1>
+        <ThemeFaceButton onOpenTheme={onOpenTheme} />
       </div>
 
-      {groups.length === 0 ? (
-        <div className="text-dim">
-          <p>no prs yet.</p>
-          <p className="mt-1 text-sm">add one above, or attach one to a day from the calendar.</p>
-        </div>
-      ) : (
-        groups.map((group) => (
-          <section key={group.exerciseName.toLowerCase()} className="mb-6">
-            <div className="flex items-baseline justify-between gap-3 border-b border-dotted border-border pb-1">
-              <h2 className="min-w-0 truncate text-fg">{group.exerciseName}</h2>
-              <span className="flex shrink-0 items-baseline gap-3 text-dim">
-                <span>
-                  <span className="text-sm">current&nbsp;</span>
-                  <Weight value={group.current.weight} />
-                </span>
-                <button
-                  type="button"
-                  onClick={() => onAddPR(group.exerciseName)}
-                  aria-label={`Add a ${group.exerciseName} pr`}
-                  className="cursor-pointer text-lg leading-none text-dim transition-colors hover:text-accent focus-visible:text-accent focus-visible:outline-none"
-                >
-                  +
-                </button>
-              </span>
-            </div>
+      {wins.length > 0 ? (
+        <section className="shrink-0" aria-label="Recent wins">
+          <div className="text-sm tracking-wide text-dim uppercase">Recent wins</div>
+          <div className="mt-2 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {wins.map((group) => (
+              <button
+                key={group.current.id}
+                type="button"
+                onClick={() => onEditPR(group.current)}
+                className={[
+                  "w-[10.5rem] shrink-0 rounded-xl bg-surface p-3 text-left",
+                  PRESSABLE,
+                  "hover:bg-fg/10",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent",
+                ].join(" ")}
+              >
+                <div className="flex items-baseline justify-between gap-2 text-sm text-dim uppercase">
+                  <span className="min-w-0 truncate">{group.exerciseName}</span>
+                  <span className="shrink-0">{prCardDate(group.current.date)}</span>
+                </div>
+                <div className="mt-3 flex items-baseline gap-1">
+                  <span className="text-accent">{group.current.weight}</span>
+                  <span className="text-sm text-dim">lbs</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
-            <ul>
-              {group.entries.map((entry) => {
-                const isCurrent = entry.id === group.current.id;
-                return (
-                  <li key={entry.id}>
-                    <button
-                      type="button"
-                      onClick={() => onEditPR(entry)}
-                      aria-label={`Edit ${entry.exerciseName} ${entry.weight} lbs`}
-                      className={[
-                        "flex w-full cursor-pointer items-baseline gap-3 px-1 py-1.5 text-left",
-                        "border-b border-dotted border-border hover:bg-fg/5",
-                        isCurrent ? "bg-fg/5" : "",
-                      ].join(" ")}
-                    >
-                      {/* Empty when not current — the marker still occupies
-                          its column via MARKER, so the dates stay aligned. */}
-                      <span
-                        className={`${MARKER} inline-flex items-center ${isCurrent ? "text-logged" : "text-dim/50"}`}
-                        aria-hidden
+      <div className="mt-4 flex shrink-0 gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {PR_CATEGORIES.map((id) => {
+          const active = category === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setCategory(id)}
+              aria-pressed={active}
+              className={[
+                "shrink-0 rounded-lg px-3 py-1.5 uppercase",
+                PRESSABLE,
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent",
+                active
+                  ? "bg-fg/15 text-fg hover:bg-fg/20"
+                  : "bg-surface text-dim hover:bg-fg/10 hover:text-accent",
+              ].join(" ")}
+            >
+              {PR_CATEGORY_LABELS[id]}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mt-4 min-h-0 flex-1 overflow-y-auto">
+        <div className="mb-5">
+          <button
+            type="button"
+            onClick={() => onAddPR()}
+            className={[
+              "rounded-lg border border-border px-3 py-2 text-dim",
+              PRESSABLE,
+              "hover:border-accent hover:text-accent",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent",
+            ].join(" ")}
+          >
+            + add pr
+          </button>
+        </div>
+
+        {visible.length === 0 ? (
+          <div className="text-dim">
+            <p>{groups.length === 0 ? "no prs yet." : "nothing in this group."}</p>
+            {groups.length === 0 ? (
+              <p className="mt-1 text-sm">add one above, or attach one to a day from the calendar.</p>
+            ) : null}
+          </div>
+        ) : (
+          visible.map((group) => (
+            <section key={group.exerciseName.toLowerCase()} className="mb-6">
+              <div className="flex items-baseline justify-between gap-3 border-b border-dotted border-border pb-1">
+                <h2 className="min-w-0 truncate text-fg">{group.exerciseName}</h2>
+                <span className="flex shrink-0 items-baseline gap-3 text-dim">
+                  <span>
+                    <span className="text-sm">current&nbsp;</span>
+                    <Weight value={group.current.weight} />
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => onAddPR(group.exerciseName)}
+                    aria-label={`Add a ${group.exerciseName} pr`}
+                    className={[
+                      "text-lg leading-none text-dim",
+                      PRESSABLE,
+                      "hover:text-accent",
+                      "focus-visible:text-accent focus-visible:outline-none",
+                    ].join(" ")}
+                  >
+                    +
+                  </button>
+                </span>
+              </div>
+
+              <ul>
+                {group.entries.map((entry) => {
+                  const isCurrent = entry.id === group.current.id;
+                  return (
+                    <li key={entry.id}>
+                      <button
+                        type="button"
+                        onClick={() => onEditPR(entry)}
+                        aria-label={`Edit ${entry.exerciseName} ${entry.weight} lbs`}
+                        className={[
+                          "flex w-full items-baseline gap-3 px-1 py-1.5 text-left",
+                          PRESSABLE,
+                          "border-b border-dotted border-border hover:bg-fg/5",
+                          isCurrent ? "bg-fg/5" : "",
+                        ].join(" ")}
                       >
-                        {isCurrent ? <Dot size={16} /> : null}
-                      </span>
-                      <span className={`${DATE} text-dim`}>
-                        {entry.date === "" ? "—" : entry.date}
-                      </span>
-                      <span className={WEIGHT}>
-                        <Weight value={entry.weight} muted={!isCurrent} />
-                      </span>
-                      {entry.note ? (
-                        <span className="min-w-0 flex-1 truncate text-sm text-dim">
-                          {entry.note}
+                        <span
+                          className={`${MARKER} inline-flex items-center ${isCurrent ? "text-logged" : "text-dim/50"}`}
+                          aria-hidden
+                        >
+                          {isCurrent ? <Dot size={16} /> : null}
                         </span>
-                      ) : null}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-        ))
-      )}
+                        <span className={`${DATE} text-dim`}>
+                          {entry.date === "" ? "—" : entry.date}
+                        </span>
+                        <span className={WEIGHT}>
+                          <Weight value={entry.weight} muted={!isCurrent} />
+                        </span>
+                        {entry.note ? (
+                          <span className="min-w-0 flex-1 truncate text-sm text-dim">
+                            {entry.note}
+                          </span>
+                        ) : null}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ))
+        )}
+      </div>
     </div>
   );
 }

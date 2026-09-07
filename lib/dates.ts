@@ -72,6 +72,11 @@ export function monthLabel(date: Date): string {
   return `${date.getFullYear()} / ${MONTH_LABELS[date.getMonth()]}`;
 }
 
+/** e.g. "September" — the prominent month title on the phone calendar. */
+export function monthFullName(date: Date): string {
+  return date.toLocaleString("en-US", { month: "long" });
+}
+
 /** e.g. "aug 2026" — reads better in a narrow sidebar list. */
 export function monthNameYear(date: Date): string {
   return `${MONTH_LABELS[date.getMonth()]} ${date.getFullYear()}`;

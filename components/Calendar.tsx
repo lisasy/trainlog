@@ -1,22 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-
+import { useEffect, useMemo, useRef, type CSSProperties } from "react";
 import {
   buildMonthGrid,
   isSameMonth,
   monthKey,
-  monthLabel,
   parseDateKey,
   WEEKDAY_LABELS,
 } from "@/lib/dates";
+import { PRESSABLE } from "@/lib/styles";
 import type { DateKey, TrainedDaysMap } from "@/lib/types";
-import NavButton from "./NavButton";
 import DayCell, { type DayCellProps } from "./DayCell";
-
-/** Height of the sticky weekday header, kept in sync with `scroll-pt-7`. */
-const HEADER_OFFSET = 28;
+import MonthDropdown from "./MonthDropdown";
+import ThemeFaceButton from "./ThemeFaceButton";
 
 export type CalendarProps = {
   /** The full navigable range, newest (current) month first. */
@@ -29,18 +25,27 @@ export type CalendarProps = {
   cursorDate: DateKey | null;
   onActiveMonthChange: (month: Date) => void;
   onTap: DayCellProps["onTap"];
+  countsByMonth: Record<string, number>;
+  currentMonthKey: string;
+  onOpenTheme: () => void;
+  /** Highlight the day whose editor is in CurrentCard. */
+  sheetDate: DateKey | null;
 };
 
 type SharedGridProps = {
   todayKey: DateKey;
   trainedDays: TrainedDaysMap;
   cursorDate: DateKey | null;
+  sheetDate: DateKey | null;
   onTap: DayCellProps["onTap"];
 };
 
+const HEADER_CHIP =
+  "inline-flex h-8 items-center rounded-lg bg-surface px-2.5 text-dim";
+
 export function WeekdayHeader() {
   return (
-    <div className="sticky top-0 z-10 grid grid-cols-7 gap-x-1 bg-bg px-1.5 sm:px-2">
+    <div className="grid grid-cols-7 gap-x-1 px-1.5 sm:px-2">
       {WEEKDAY_LABELS.map((day) => (
         <div key={day} className="min-w-0 truncate py-1 text-sm text-dim">
           {day}
@@ -55,31 +60,44 @@ function MonthDayGrid({
   todayKey,
   trainedDays,
   cursorDate,
+  sheetDate,
   onTap,
 }: SharedGridProps & { month: Date }) {
   const weeks = buildMonthGrid(month);
+  const weekRows = weeks.map(() => "minmax(0, 1fr)").join(" ");
 
   return (
-    <div className="flex flex-col gap-y-1 lg:flex-1">
+    <div
+      className="week-stack h-full min-h-0 flex-1 gap-y-1"
+      style={
+        {
+          "--week-rows": weekRows,
+          "--week-count": String(weeks.length),
+        } as CSSProperties
+      }
+    >
       {weeks.map((week) => (
         <div
           key={week[0]}
           data-week-start={week[0]}
-          className="grid grid-cols-7 gap-x-1 px-1.5 sm:px-2 lg:flex-1"
+          className="min-h-0 overflow-hidden"
         >
-          {week.map((dateKey) => (
-            <DayCell
-              key={dateKey}
-              date={dateKey}
-              dayNumber={String(parseDateKey(dateKey).getDate()).padStart(2, "0")}
-              inMonth={isSameMonth(dateKey, month)}
-              isToday={dateKey === todayKey}
-              isFuture={dateKey > todayKey}
-              isCursor={dateKey === cursorDate}
-              trainedDay={trainedDays[dateKey]}
-              onTap={onTap}
-            />
-          ))}
+          <div className="grid h-full min-h-0 grid-cols-7 grid-rows-1 gap-x-1 px-1.5 sm:px-2">
+            {week.map((dateKey) => (
+              <DayCell
+                key={dateKey}
+                date={dateKey}
+                dayNumber={String(parseDateKey(dateKey).getDate()).padStart(2, "0")}
+                inMonth={isSameMonth(dateKey, month)}
+                isToday={dateKey === todayKey}
+                isFuture={dateKey > todayKey}
+                isCursor={dateKey === cursorDate}
+                isSelected={dateKey === sheetDate}
+                trainedDay={trainedDays[dateKey]}
+                onTap={onTap}
+              />
+            ))}
+          </div>
         </div>
       ))}
     </div>
@@ -94,20 +112,19 @@ export default function Calendar({
   cursorDate,
   onActiveMonthChange,
   onTap,
+  countsByMonth,
+  currentMonthKey,
+  onOpenTheme,
+  sheetDate,
 }: CalendarProps) {
   const activeKey = monthKey(activeMonth);
-  const activeIndex = months.findIndex((month) => monthKey(month) === activeKey);
-  const canGoPrev = activeIndex !== -1 && activeIndex < months.length - 1;
-  const canGoNext = activeIndex > 0;
 
-  // The feed runs oldest → newest, so the earliest month sits at the top and
-  // the current month at the bottom, the way a timeline reads.
+  // Oldest on the left, current month on the right — paging back goes left.
   const feedMonths = useMemo(() => [...months].reverse(), [months]);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useRef(new Map<string, HTMLDivElement>());
   const lastKnownKey = useRef(activeKey);
-  const lastStepAt = useRef(0);
   const suppressObserver = useRef(false);
   const suppressTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const didInitialScroll = useRef(false);
@@ -118,10 +135,7 @@ export default function Calendar({
     if (container === null || section === undefined) return;
     suppressObserver.current = true;
     if (suppressTimeout.current !== null) clearTimeout(suppressTimeout.current);
-    // The container is the offset parent (position: relative), so offsetTop is
-    // the section's position within the scroll content; back off the sticky
-    // header so the month lands just below it rather than under it.
-    container.scrollTo({ top: Math.max(0, section.offsetTop - HEADER_OFFSET), behavior });
+    container.scrollTo({ left: section.offsetLeft, behavior });
     suppressTimeout.current = setTimeout(
       () => {
         suppressObserver.current = false;
@@ -137,8 +151,6 @@ export default function Calendar({
     scrollToMonth(activeKey);
   }, [activeKey]);
 
-  // The current month lives at the bottom of the feed now, so jump there once
-  // the sections exist rather than opening on the earliest month.
   useEffect(() => {
     if (didInitialScroll.current) return;
     if (sectionRefs.current.get(activeKey) === undefined) return;
@@ -155,7 +167,7 @@ export default function Calendar({
         if (suppressObserver.current) return;
         const visible = entries.filter((entry) => entry.isIntersecting);
         if (visible.length === 0) return;
-        visible.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        visible.sort((a, b) => b.intersectionRatio - a.intersectionRatio);
         const key = visible[0].target.getAttribute("data-month-key");
         if (key === null || key === lastKnownKey.current) return;
         const found = months.find((month) => monthKey(month) === key);
@@ -163,66 +175,63 @@ export default function Calendar({
         lastKnownKey.current = key;
         onActiveMonthChange(found);
       },
-      { root: container, rootMargin: "0px 0px -70% 0px", threshold: 0 },
+      { root: container, threshold: [0.55] },
     );
 
     for (const section of sectionRefs.current.values()) observer.observe(section);
     return () => observer.disconnect();
   }, [months, onActiveMonthChange]);
 
-  function stepMonth(direction: 1 | -1) {
-    if (direction === 1 ? !canGoNext : !canGoPrev) return;
-    const now = Date.now();
-    if (now - lastStepAt.current < 250) return;
-    lastStepAt.current = now;
-    const target = months[activeIndex - direction];
-    if (target === undefined) return;
-    onActiveMonthChange(target);
-  }
-
   const gridProps: SharedGridProps = {
     todayKey,
     trainedDays,
     cursorDate,
+    sheetDate,
     onTap,
   };
 
   return (
     <section aria-label="Training calendar" className="flex min-h-0 flex-1 flex-col">
-      <div className="flex shrink-0 items-center justify-between gap-2 pb-2 lg:hidden">
-        <div className="flex items-center gap-2">
-          <NavButton
-            label={<ChevronLeft size={16} />}
-            onClick={() => stepMonth(-1)}
-            ariaLabel="Previous month"
-            disabled={!canGoPrev}
-          />
-          <span className="px-1 text-fg">{monthLabel(activeMonth)}</span>
-          <NavButton
-            label={<ChevronRight size={16} />}
-            onClick={() => stepMonth(1)}
-            ariaLabel="Next month"
-            disabled={!canGoNext}
-          />
+      <div className="shrink-0 pb-3 lg:hidden">
+        <div className="flex items-center justify-between">
+          <span className={HEADER_CHIP}>{activeMonth.getFullYear()}</span>
+          <ThemeFaceButton onOpenTheme={onOpenTheme} />
         </div>
-        <NavButton
-          label="today"
-          onClick={() => months[0] !== undefined && onActiveMonthChange(months[0])}
-          ariaLabel="Jump to current month"
-        />
+        <div className="mt-3 flex items-center justify-between gap-3">
+          <MonthDropdown
+            variant="title"
+            months={months}
+            activeMonth={activeMonth}
+            countsByMonth={countsByMonth}
+            currentMonthKey={currentMonthKey}
+            onSelectMonth={onActiveMonthChange}
+          />
+          <button
+            type="button"
+            onClick={() => months[0] !== undefined && onActiveMonthChange(months[0])}
+            aria-label="Jump to current month"
+            className={[
+              HEADER_CHIP,
+              PRESSABLE,
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent",
+            ].join(" ")}
+          >
+            TODAY
+          </button>
+        </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-hidden">
+      <WeekdayHeader />
+
+      <div className="relative min-h-[4rem] flex-1">
         <div
           ref={containerRef}
-          className="relative h-full snap-y snap-proximity overflow-x-hidden overflow-y-auto overscroll-contain scroll-pt-7 pb-[38dvh] lg:snap-mandatory lg:pb-0"
+          className={[
+            "absolute inset-0 flex snap-x snap-mandatory overflow-x-auto overflow-y-hidden overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+          ].join(" ")}
         >
-          {/* One header for the whole feed — it stays put while the months
-              scroll under it, instead of repeating on every month. */}
-          <WeekdayHeader />
           {feedMonths.map((month) => {
             const key = monthKey(month);
-            const isActive = key === activeKey;
 
             return (
               <div
@@ -232,11 +241,7 @@ export default function Calendar({
                   if (el) sectionRefs.current.set(key, el);
                   else sectionRefs.current.delete(key);
                 }}
-                className={[
-                  "snap-start pt-3 transition-opacity duration-300 ease-out",
-                  "lg:flex lg:h-full lg:flex-col lg:pt-2",
-                  isActive ? "opacity-100" : "opacity-60",
-                ].join(" ")}
+                className="flex h-full w-full shrink-0 snap-start flex-col pt-2"
               >
                 <MonthDayGrid month={month} {...gridProps} />
               </div>

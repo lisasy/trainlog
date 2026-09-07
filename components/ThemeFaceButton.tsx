@@ -1,0 +1,26 @@
+"use client";
+
+import { PRESSABLE } from "@/lib/styles";
+
+export type ThemeFaceButtonProps = {
+  onOpenTheme: () => void;
+};
+
+/** Shared `:) ` control — phone chrome on every view. */
+export default function ThemeFaceButton({ onOpenTheme }: ThemeFaceButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={onOpenTheme}
+      aria-label="Theme"
+      className={[
+        "tap-target inline-flex h-9 w-9 items-center justify-center rounded-lg bg-surface text-fg",
+        PRESSABLE,
+        "hover:bg-border hover:text-accent",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent",
+      ].join(" ")}
+    >
+      :)
+    </button>
+  );
+}

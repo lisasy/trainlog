@@ -12,7 +12,7 @@ const LINK =
   "link cursor-pointer text-dim transition-colors hover:text-accent focus-visible:text-accent focus-visible:outline-none";
 
 /** Shared header row for the card's form states: `> title` + a close link. */
-function FormHeader({ title, onClose }: { title: string; onClose: () => void }) {
+export function FormHeader({ title, onClose }: { title: string; onClose: () => void }) {
   return (
     <div className="flex shrink-0 items-baseline justify-between gap-2">
       <span className="truncate">
@@ -26,8 +26,10 @@ function FormHeader({ title, onClose }: { title: string; onClose: () => void }) 
   );
 }
 
-function scrollBody(fill: boolean, scrollClassName: string) {
-  return fill ? "mt-3 min-h-0 flex-1 overflow-y-auto" : `mt-3 overflow-y-auto ${scrollClassName}`;
+function scrollBody(fill: boolean, scrollClassName?: string) {
+  if (fill) return "mt-3 min-h-0 flex-1 overflow-y-auto";
+  if (scrollClassName) return `mt-3 overflow-y-auto ${scrollClassName}`;
+  return "mt-3";
 }
 
 export type StatsViewProps = {
@@ -136,7 +138,7 @@ export function DayFormView({
   onRemovePR,
   onClose,
   fill = false,
-  scrollClassName = "max-h-[58dvh]",
+  scrollClassName,
 }: DayFormViewProps) {
   return (
     <>
@@ -181,7 +183,7 @@ export function PRFormView({
   onDelete,
   onClose,
   fill = false,
-  scrollClassName = "max-h-[58dvh]",
+  scrollClassName,
 }: PRFormViewProps) {
   const isEdit = sheet.mode === "edit";
   const entry = isEdit ? prEntries.find((e) => e.id === sheet.id) : undefined;

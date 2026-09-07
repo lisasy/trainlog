@@ -10,3 +10,11 @@ export const VIEW_LABELS: Record<View, string> = {
   splits: "splits",
   gallery: "gallery",
 };
+
+/** Desktop sidebar — matches the intended icon rail. */
+export const VIEW_SIDEBAR_LABELS: Record<View, string> = {
+  calendar: "calendar",
+  prs: "prs",
+  splits: "splits",
+  gallery: "gallery",
+};

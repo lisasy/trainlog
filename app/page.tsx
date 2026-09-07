@@ -11,7 +11,6 @@ import PRList from "@/components/PRList";
 import type { PRSheet } from "@/components/DayCardContent";
 import type { PRFormInput } from "@/components/PRForm";
 import Sidebar from "@/components/Sidebar";
-import ThemePicker from "@/components/ThemePicker";
 import {
   isSameMonth,
   monthKey,
@@ -23,7 +22,7 @@ import {
   startOfMonth,
   todayKey as getTodayKey,
 } from "@/lib/dates";
-import type { View } from "@/lib/views";
+import { VIEW_SIDEBAR_LABELS, type View } from "@/lib/views";
 import {
   addPREntry,
   applySeed,
@@ -134,7 +133,7 @@ export default function Home() {
    */
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (sheetDate !== null || themeOpen) return;
+      if (sheetDate !== null || themeOpen || prSheet !== null) return;
       if (viewRef.current !== "calendar") return;
       if (event.metaKey || event.ctrlKey || event.altKey) return;
 
@@ -201,7 +200,7 @@ export default function Home() {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [sheetDate, themeOpen, todayKey]);
+  }, [sheetDate, themeOpen, prSheet, todayKey]);
 
   const commitDays = useCallback((next: TrainedDaysMap) => {
     setTrainedDays(next);
@@ -269,8 +268,13 @@ export default function Home() {
   );
   const monthCount = Object.keys(trainedDays).filter((key) => isSameMonth(key, month)).length;
 
-  // The day editor + PR form, shared by the phone dock and the desktop rail.
-  const dayCardHandlers = {
+  // One card, two mounts (phone dock / desktop rail). Theme replaces the
+  // current body; close restores because sheetDate / prSheet stay set.
+  const currentCard = {
+    streakWeeks,
+    prEntries,
+    trainedDays,
+    todayKey,
     sheetDate: view === "calendar" ? sheetDate : null,
     onSelectSplit: (date: DateKey, split: Split) =>
       commitDays(markTrained(trainedDays, date, split)),
@@ -293,50 +297,71 @@ export default function Home() {
       setPRSheet(null);
     },
     onClosePR: () => setPRSheet(null),
+    themeOpen,
+    theme,
+    onOpenTheme: () => setThemeOpen(true),
+    onCloseTheme: () => setThemeOpen(false),
+    onSelectPreset: (presetId: string) => commitTheme({ ...theme, presetId }),
+    onSetAccent: (accent: string | undefined) =>
+      commitTheme({ presetId: theme.presetId, ...(accent ? { accent } : {}) }),
+    onImported: ({ trainedDays: days, prEntries: prs }: { trainedDays: TrainedDaysMap; prEntries: PREntry[] }) => {
+      const mergedDays = applyTrainedSeed(days, loadRemovedSeedDates());
+      setTrainedDays(mergedDays);
+      saveTrainedDays(mergedDays);
+      const merged = applySeed(prs, loadRemovedSeedIds());
+      setPREntries(merged);
+      savePREntries(merged);
+    },
   };
 
   return (
     <div className="flex h-dvh w-full">
       <Sidebar onOpenTheme={() => setThemeOpen(true)} view={view} onSelectView={setView} />
 
-      <main className="relative flex h-dvh min-w-0 flex-1 flex-col px-4 pt-[env(safe-area-inset-top)] pb-0 sm:px-6 lg:pt-0 lg:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      <main className="relative flex h-dvh min-w-0 flex-1 flex-col overflow-hidden px-4 pt-[env(safe-area-inset-top)] pb-0 lg:pt-0 lg:pb-[max(1rem,env(safe-area-inset-bottom))]">
         {/* Desktop only — phones navigate from the bottom nav and the month
             row above the calendar, so this whole bar is gratuitous there. */}
         <header className="hidden h-11 shrink-0 items-center justify-between gap-3 pt-2 lg:flex">
-          <span className="flex items-center gap-2">
-            <span className="text-dim">:</span>
-            <NavButton
-              label={<ChevronLeft size={16} />}
-              onClick={() => stepMonth(-1)}
-              ariaLabel="Previous month"
-              disabled={!canGoPrevMonth}
-            />
-            <MonthDropdown
-              months={months}
-              activeMonth={month}
-              countsByMonth={countsByMonth}
-              currentMonthKey={monthKey(currentMonth)}
-              onSelectMonth={goToMonth}
-            />
-            <NavButton
-              label={<ChevronRight size={16} />}
-              onClick={() => stepMonth(1)}
-              ariaLabel="Next month"
-              disabled={!canGoNextMonth}
-            />
-            <NavButton
-              label="today"
-              onClick={() => {
-                jumpToToday();
-                setView("calendar");
-              }}
-              ariaLabel="Jump to current month"
-            />
-          </span>
-          <span className="shrink-0 text-dim">{mounted ? `${monthCount} trained` : "…"}</span>
+          {view === "calendar" ? (
+            <>
+              <span className="flex items-center gap-2">
+                <span className="text-dim">:</span>
+                <NavButton
+                  label={<ChevronLeft size={16} />}
+                  onClick={() => stepMonth(-1)}
+                  ariaLabel="Previous month"
+                  disabled={!canGoPrevMonth}
+                />
+                <MonthDropdown
+                  months={months}
+                  activeMonth={month}
+                  countsByMonth={countsByMonth}
+                  currentMonthKey={monthKey(currentMonth)}
+                  onSelectMonth={goToMonth}
+                />
+                <NavButton
+                  label={<ChevronRight size={16} />}
+                  onClick={() => stepMonth(1)}
+                  ariaLabel="Next month"
+                  disabled={!canGoNextMonth}
+                />
+                <NavButton
+                  label="today"
+                  onClick={() => {
+                    jumpToToday();
+                    setView("calendar");
+                  }}
+                  ariaLabel="Jump to current month"
+                />
+              </span>
+              <span className="shrink-0 text-dim">{mounted ? `${monthCount} trained` : "…"}</span>
+            </>
+          ) : (
+            <span className="text-accent">{VIEW_SIDEBAR_LABELS[view]}</span>
+          )}
         </header>
 
-        <div className="flex min-h-0 flex-1 flex-col py-3 sm:py-4">
+        <div className="flex min-h-0 flex-1 flex-col pt-3 pb-4 sm:pt-4">
           {!mounted ? (
             <p className="text-dim">loading…</p>
           ) : view === "prs" ? (
@@ -344,6 +369,7 @@ export default function Home() {
               entries={prEntries}
               onAddPR={(exerciseName) => setPRSheet({ mode: "add", exerciseName })}
               onEditPR={handleEditPR}
+              onOpenTheme={() => setThemeOpen(true)}
             />
           ) : view === "splits" ? (
             <div className="flex flex-1 items-center justify-center text-dim">splits — not built yet</div>
@@ -357,8 +383,19 @@ export default function Home() {
                 todayKey={todayKey}
                 trainedDays={trainedDays}
                 cursorDate={cursorDate}
-                onActiveMonthChange={setMonth}
-                onTap={setSheetDate}
+                onActiveMonthChange={(next) => {
+                  setMonth(next);
+                  setSheetDate((current) =>
+                    current !== null && isSameMonth(current, next) ? current : null,
+                  );
+                }}
+                onTap={(date) =>
+                  setSheetDate((current) => (current === date ? null : date))
+                }
+                countsByMonth={countsByMonth}
+                currentMonthKey={monthKey(currentMonth)}
+                onOpenTheme={() => setThemeOpen(true)}
+                sheetDate={sheetDate}
               />
             </div>
           )}
@@ -366,43 +403,13 @@ export default function Home() {
 
         <MobileDock
           calendarView={view === "calendar"}
-          streakWeeks={streakWeeks}
-          prEntries={prEntries}
-          trainedDays={trainedDays}
-          todayKey={todayKey}
-          onOpenTheme={() => setThemeOpen(true)}
           view={view}
           onSelectView={setView}
-          {...dayCardHandlers}
+          {...currentCard}
         />
       </main>
 
-      <RightRail
-        streakWeeks={streakWeeks}
-        prEntries={prEntries}
-        trainedDays={trainedDays}
-        todayKey={todayKey}
-        {...dayCardHandlers}
-      />
-
-      {themeOpen ? (
-        <ThemePicker
-          selection={theme}
-          onSelectPreset={(presetId) => commitTheme({ ...theme, presetId })}
-          onSetAccent={(accent) => commitTheme({ presetId: theme.presetId, ...(accent ? { accent } : {}) })}
-          onImported={({ trainedDays: days, prEntries: prs }) => {
-            const mergedDays = applyTrainedSeed(days, loadRemovedSeedDates());
-            setTrainedDays(mergedDays);
-            saveTrainedDays(mergedDays);
-            // An imported backup is authoritative for this device; re-apply
-            // the seed so any newer repo entries are still present.
-            const merged = applySeed(prs, loadRemovedSeedIds());
-            setPREntries(merged);
-            savePREntries(merged);
-          }}
-          onClose={() => setThemeOpen(false)}
-        />
-      ) : null}
+      <RightRail {...currentCard} />
     </div>
   );
 }

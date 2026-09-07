@@ -1,6 +1,15 @@
 "use client";
 
-import { VIEWS, VIEW_LABELS, type View } from "@/lib/views";
+import { BookOpen, Calendar, Images, Trophy, type LucideIcon } from "lucide-react";
+import { PRESSABLE } from "@/lib/styles";
+import { VIEWS, VIEW_SIDEBAR_LABELS, type View } from "@/lib/views";
+
+const VIEW_ICONS: Record<View, LucideIcon> = {
+  calendar: Calendar,
+  prs: Trophy,
+  splits: BookOpen,
+  gallery: Images,
+};
 
 export type SidebarProps = {
   onOpenTheme: () => void;
@@ -11,10 +20,8 @@ export type SidebarProps = {
 /** Desktop left rail: identity and app navigation. */
 export default function Sidebar({ onOpenTheme, view, onSelectView }: SidebarProps) {
   return (
-    <aside className="hidden w-[15rem] shrink-0 flex-col border-r border-dotted border-border pb-[max(0.75rem,env(safe-area-inset-bottom))] text-sm lg:flex">
-      {/* h-11 matches the body header exactly, so this bottom border and the
-          body's land on the same line. */}
-      <div className="flex h-11 shrink-0 items-baseline border-b border-dotted border-border px-3 pt-2">
+    <aside className="hidden w-[15rem] shrink-0 flex-col pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:flex">
+      <div className="flex h-11 shrink-0 items-baseline px-4 pt-2">
         <span className="text-dim">&gt;&nbsp;</span>
         <span className="text-accent glow">trainlog</span>
         <span
@@ -23,26 +30,33 @@ export default function Sidebar({ onOpenTheme, view, onSelectView }: SidebarProp
         />
       </div>
 
-      <nav aria-label="Views" className="min-h-0 flex-1 px-1 pt-2">
-        <div className="px-2 pb-1 text-dim">view</div>
-        {VIEWS.map((name) => (
-          <button
-            key={name}
-            type="button"
-            onClick={() => onSelectView(name)}
-            aria-current={view === name ? "true" : undefined}
-            className={[
-              "flex w-full cursor-pointer items-baseline gap-2 px-2 py-0.5 text-left transition-colors",
-              "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-accent",
-              view === name ? "bg-fg/10 text-fg" : "text-fg/90 hover:bg-fg/5",
-            ].join(" ")}
-          >
-            <span className="min-w-0 flex-1 truncate">{VIEW_LABELS[name]}</span>
-          </button>
-        ))}
+      <nav aria-label="Views" className="min-h-0 flex-1 px-2 pt-4">
+        {VIEWS.map((name) => {
+          const active = view === name;
+          const Icon = VIEW_ICONS[name];
+          return (
+            <button
+              key={name}
+              type="button"
+              onClick={() => onSelectView(name)}
+              aria-current={active ? "true" : undefined}
+              className={[
+                "mb-0.5 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left",
+                PRESSABLE,
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent",
+                active
+                  ? "bg-surface text-accent hover:bg-fg/10"
+                  : "text-dim hover:bg-fg/5 hover:text-fg",
+              ].join(" ")}
+            >
+              <Icon size={18} aria-hidden />
+              <span className="min-w-0 flex-1 truncate">{VIEW_SIDEBAR_LABELS[name]}</span>
+            </button>
+          );
+        })}
       </nav>
 
-      <div className="flex items-baseline justify-between border-t border-dotted border-border px-3 py-1 text-dim">
+      <div className="flex items-baseline justify-between px-4 py-2 text-dim">
         <span>get strong</span>
         <button
           type="button"

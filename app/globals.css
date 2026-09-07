@@ -28,6 +28,11 @@
    */
   --logged: #b77e64;
   --scheduled: #46cab2;
+
+  /* Phone month ↔ day-sheet layout. Shared by the week stack and the
+   * calendar/dock flex split so they ease together. */
+  --sheet-duration: 420ms;
+  --sheet-ease: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 @theme inline {
@@ -235,5 +240,142 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .heatmap-shimmer {
     animation: none;
+  }
+
+  .today-dot::before,
+  .today-lightning {
+    animation: none;
+  }
+}
+
+/*
+ * Today: a still hollow ring with a core that blooms from the center —
+ * the pulse lives inside the marker, the stroke doesn't scale. Lightning
+ * on the cell border is separate (once, then 5s dark).
+ */
+@keyframes today-inner-pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.15);
+    opacity: 0.9;
+  }
+  55% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.2;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0;
+  }
+}
+
+.today-dot {
+  position: relative;
+  overflow: hidden;
+}
+
+.today-dot::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transform: translate(-50%, -50%) scale(0.15);
+  animation: today-inner-pulse 2.6s ease-out infinite;
+}
+
+/* Always-on nucleus so the ring never looks empty between blooms. */
+.today-dot::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3px;
+  height: 3px;
+  border-radius: inherit;
+  background: var(--accent);
+  transform: translate(-50%, -50%);
+}
+
+.today-stroke {
+  color: var(--accent);
+}
+
+.today-lightning {
+  fill: none;
+  width: calc(100% - 2px);
+  height: calc(100% - 2px);
+  stroke: color-mix(in srgb, var(--accent) 85%, white);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-dasharray: 12 88;
+  stroke-dashoffset: 100;
+  filter: drop-shadow(0 0 4px var(--accent));
+  animation: today-lightning 5.5s linear infinite;
+}
+
+@keyframes today-lightning {
+  /* ~0.5s of travel, then 5s dark. */
+  0% {
+    stroke-dashoffset: 100;
+    opacity: 0;
+  }
+  2% {
+    opacity: 1;
+  }
+  9% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  11% {
+    opacity: 0;
+    stroke-dashoffset: 0;
+  }
+  11.01%,
+  100% {
+    opacity: 0;
+    stroke-dashoffset: 100;
+  }
+}
+
+/*
+ * Phone: the calendar column and the dock trade flex-grow so the month
+ * shrinks into a week strip while the day sheet expands into the rest.
+ * `min-height: min-content` keeps each pane from collapsing through its
+ * chrome while grow is 0. Desktop ignores this — the rail holds the form.
+ */
+.sheet-grow-cal,
+.sheet-grow-dock {
+  flex-basis: 0;
+  min-height: min-content;
+  transition: flex-grow var(--sheet-duration) var(--sheet-ease);
+}
+
+.week-stack {
+  display: grid;
+  align-content: start;
+  grid-template-rows: var(--week-rows);
+  transition: grid-template-rows var(--sheet-duration) var(--sheet-ease);
+}
+
+@media (min-width: 1024px) {
+  .sheet-grow-cal {
+    flex-grow: 1 !important;
+    transition: none;
+  }
+
+  .week-stack {
+    grid-template-rows: repeat(var(--week-count), minmax(0, 1fr));
+    transition: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet-grow-cal,
+  .sheet-grow-dock,
+  .week-stack {
+    transition: none;
   }
 }

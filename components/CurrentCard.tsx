@@ -1,197 +1,164 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 import type { DateKey, PREntry, Split, TrainedDaysMap } from "@/lib/types";
-import { DayFormView, PRFormView, StatsView, type PRSheet } from "./DayCardContent";
+import type { ThemeSelection } from "@/lib/theme";
+import {
+  DayFormView,
+  PRFormView,
+  StatsView,
+  type PRSheet,
+} from "./DayCardContent";
 import type { PRFormInput } from "./PRForm";
+import ThemeView from "./ThemePicker";
 
-export type CurrentCardProps = {
+export type CurrentCardContentProps = {
   streakWeeks: number;
   prEntries: PREntry[];
   trainedDays: TrainedDaysMap;
   todayKey: DateKey;
-  onOpenTheme?: () => void;
   statsDirection?: "row" | "col";
-  /** Fill the parent's height (desktop rail) vs. hug content (phone dock). */
-  fill?: boolean;
-  /** Whether the stats view is the resting state (false when off the calendar). */
+  /** Resting body is stats (calendar / desktop rail). */
   showStats?: boolean;
-  /** The day being edited, or null. */
   sheetDate: DateKey | null;
   onSelectSplit: (date: DateKey, split: Split) => void;
   onClearDay: (date: DateKey) => void;
   onAddPR: (date: DateKey, input: { exerciseName: string; weight: number; note?: string }) => void;
   onRemovePR: (id: string) => void;
   onCloseSheet: () => void;
-  /** A ledger PR being added/edited, or null. */
   prSheet: PRSheet | null;
   onSubmitPR: (input: PRFormInput) => void;
   onDeletePR: (id: string) => void;
   onClosePR: () => void;
-  /** Height cap for the form's scroll region when not filling. */
+  themeOpen: boolean;
+  theme: ThemeSelection;
+  onOpenTheme: () => void;
+  onCloseTheme: () => void;
+  onSelectPreset: (presetId: string) => void;
+  onSetAccent: (accent: string | undefined) => void;
+  onImported: (data: { trainedDays: TrainedDaysMap; prEntries: PREntry[] }) => void;
   scrollClassName?: string;
 };
 
-const CARD =
-  "rounded-2xl bg-surface transition-[transform,opacity] duration-300 ease-out motion-reduce:transition-none";
+export type CurrentCardProps = CurrentCardContentProps & {
+  /** Fill the rail (desktop). Phone always hugs content. */
+  fill?: boolean;
+};
+
+const SHELL = "rounded-2xl bg-surface";
+
+export type CardBody = "theme" | "pr" | "day" | "stats";
+
+export function cardBody(props: {
+  themeOpen: boolean;
+  prSheet: PRSheet | null;
+  sheetDate: DateKey | null;
+  showStats: boolean;
+}): CardBody | null {
+  if (props.themeOpen) return "theme";
+  if (props.prSheet !== null) return "pr";
+  if (props.sheetDate !== null) return "day";
+  if (props.showStats) return "stats";
+  return null;
+}
 
 /**
- * The floating card that carries today's stats and, on demand, the day editor
- * or the PR add/edit form. One state slides/fades away as the next takes its
- * place. Shared verbatim by the phone dock and the desktop siderail.
+ * One floating card. Chrome stays; the body swaps (stats, day, ledger PR, theme).
+ * Theme replaces the previous body; closing theme restores it because sheetDate /
+ * prSheet are left intact.
  */
 export default function CurrentCard({
-  streakWeeks,
-  prEntries,
-  trainedDays,
-  todayKey,
-  onOpenTheme,
-  statsDirection,
   fill = false,
   showStats = true,
-  sheetDate,
-  onSelectSplit,
-  onClearDay,
-  onAddPR,
-  onRemovePR,
-  onCloseSheet,
-  prSheet,
-  onSubmitPR,
-  onDeletePR,
-  onClosePR,
   scrollClassName,
+  ...props
 }: CurrentCardProps) {
-  const showForm = sheetDate !== null || prSheet !== null;
-
-  // Each form renders at once on open (so it takes full height) and is held
-  // for one transition-out after close via its `linger`.
-  const [dayLinger, setDayLinger] = useState<DateKey | null>(null);
-  useEffect(() => {
-    if (sheetDate !== null) {
-      setDayLinger(sheetDate);
-      return;
-    }
-    const timeout = window.setTimeout(() => setDayLinger(null), 300);
-    return () => window.clearTimeout(timeout);
-  }, [sheetDate]);
-
-  const [prLinger, setPrLinger] = useState<PRSheet | null>(null);
-  useEffect(() => {
-    if (prSheet !== null) {
-      setPrLinger(prSheet);
-      return;
-    }
-    const timeout = window.setTimeout(() => setPrLinger(null), 300);
-    return () => window.clearTimeout(timeout);
-  }, [prSheet]);
-
-  const dayForRender = sheetDate ?? dayLinger;
-  const prForRender = prSheet ?? prLinger;
+  const body = cardBody({
+    themeOpen: props.themeOpen,
+    prSheet: props.prSheet,
+    sheetDate: props.sheetDate,
+    showStats,
+  });
 
   useEffect(() => {
-    if (!showForm) return;
+    if (body === null || body === "stats") return;
     function onKeyDown(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
-      if (prSheet !== null) onClosePR();
-      else onCloseSheet();
+      if (props.themeOpen) props.onCloseTheme();
+      else if (props.prSheet !== null) props.onClosePR();
+      else props.onCloseSheet();
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [showForm, prSheet, onClosePR, onCloseSheet]);
+  }, [body, props.themeOpen, props.prSheet, props.onCloseTheme, props.onClosePR, props.onCloseSheet]);
 
-  const stats = (
+  if (body === null) return null;
+
+  let inner = (
     <StatsView
-      streakWeeks={streakWeeks}
-      prEntries={prEntries}
-      trainedDays={trainedDays}
-      todayKey={todayKey}
-      onOpenTheme={onOpenTheme}
-      statsDirection={statsDirection}
+      streakWeeks={props.streakWeeks}
+      prEntries={props.prEntries}
+      trainedDays={props.trainedDays}
+      todayKey={props.todayKey}
+      onOpenTheme={props.onOpenTheme}
+      statsDirection={props.statsDirection}
       fill={fill}
     />
   );
-
-  // PR form wins if both linger (they never open together, but the PR one
-  // outlives its close by 300ms).
-  const form =
-    prForRender !== null ? (
+  if (body === "theme") {
+    inner = (
+      <ThemeView
+        selection={props.theme}
+        onSelectPreset={props.onSelectPreset}
+        onSetAccent={props.onSetAccent}
+        onImported={props.onImported}
+        onClose={props.onCloseTheme}
+        fill={fill}
+        scrollClassName={scrollClassName}
+      />
+    );
+  } else if (body === "pr" && props.prSheet !== null) {
+    inner = (
       <PRFormView
-        sheet={prForRender}
-        prEntries={prEntries}
-        todayKey={todayKey}
-        onSubmit={onSubmitPR}
-        onDelete={onDeletePR}
-        onClose={onClosePR}
+        sheet={props.prSheet}
+        prEntries={props.prEntries}
+        todayKey={props.todayKey}
+        onSubmit={props.onSubmitPR}
+        onDelete={props.onDeletePR}
+        onClose={props.onClosePR}
         fill={fill}
         scrollClassName={scrollClassName}
       />
-    ) : dayForRender !== null ? (
+    );
+  } else if (body === "day" && props.sheetDate !== null) {
+    inner = (
       <DayFormView
-        date={dayForRender}
-        prEntries={prEntries}
-        trainedDays={trainedDays}
-        onSelectSplit={onSelectSplit}
-        onClearDay={onClearDay}
-        onAddPR={onAddPR}
-        onRemovePR={onRemovePR}
-        onClose={onCloseSheet}
+        date={props.sheetDate}
+        prEntries={props.prEntries}
+        trainedDays={props.trainedDays}
+        onSelectSplit={props.onSelectSplit}
+        onClearDay={props.onClearDay}
+        onAddPR={props.onAddPR}
+        onRemovePR={props.onRemovePR}
+        onClose={props.onCloseSheet}
         fill={fill}
         scrollClassName={scrollClassName}
       />
-    ) : null;
-
-  const statsVisible = showStats && !showForm;
-
-  if (fill) {
-    return (
-      <div className="relative h-full">
-        <div
-          className={[
-            CARD,
-            "absolute inset-0 flex flex-col p-4",
-            statsVisible ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-1 opacity-0",
-          ].join(" ")}
-        >
-          {stats}
-        </div>
-        <div
-          className={[
-            CARD,
-            "absolute inset-0 flex flex-col p-4",
-            showForm ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-1 opacity-0",
-          ].join(" ")}
-        >
-          {form}
-        </div>
-      </div>
     );
   }
 
   return (
-    <div className="relative">
-      <div
-        className={[
-          CARD,
-          "p-4",
-          statsVisible
-            ? "translate-y-0 opacity-100"
-            : "pointer-events-none absolute inset-x-0 bottom-0 translate-y-4 opacity-0",
-        ].join(" ")}
-      >
-        {stats}
-      </div>
-      <div
-        className={[
-          CARD,
-          "p-4",
-          showForm
-            ? "translate-y-0 opacity-100"
-            : "pointer-events-none absolute inset-x-0 bottom-0 translate-y-full opacity-0",
-        ].join(" ")}
-      >
-        {form}
-      </div>
+    <div
+      className={[
+        SHELL,
+        "p-4",
+        fill
+          ? "flex h-full min-h-0 flex-col"
+          : "max-h-[42dvh] overflow-y-auto lg:max-h-none",
+      ].join(" ")}
+    >
+      {inner}
     </div>
   );
 }

@@ -2,7 +2,6 @@
 
 import type { DateKey, TrainedDay } from "@/lib/types";
 import { PRESSABLE } from "@/lib/styles";
-import { statusTextClass } from "./dayStatus";
 
 export type DayCellProps = {
   date: DateKey;
@@ -11,10 +10,17 @@ export type DayCellProps = {
   isToday: boolean;
   isFuture: boolean;
   isCursor: boolean;
+  /** The day currently in CurrentCard. */
+  isSelected: boolean;
   trainedDay?: TrainedDay;
   onTap: (date: DateKey) => void;
 };
 
+/**
+ * Day numbers stay muted. Status lives in the chrome + the dot under the
+ * number: filled logged for days already trained, dashed + dim for scheduled
+ * ahead, a hollow accent ring for today.
+ */
 export default function DayCell({
   date,
   dayNumber,
@@ -22,6 +28,7 @@ export default function DayCell({
   isToday,
   isFuture,
   isCursor,
+  isSelected,
   trainedDay,
   onTap,
 }: DayCellProps) {
@@ -32,10 +39,8 @@ export default function DayCell({
     return (
       <div
         aria-hidden
-        className="flex h-full min-h-14 w-full min-w-0 flex-col items-center p-1.5 text-dim/30 sm:min-h-20 sm:p-2"
-      >
-        <span className="font-bold">{dayNumber}</span>
-      </div>
+        className="h-full min-h-0 w-full min-w-0"
+      />
     );
   }
 
@@ -43,42 +48,51 @@ export default function DayCell({
     <button
       type="button"
       onClick={() => onTap(date)}
-      aria-haspopup="dialog"
+      aria-pressed={isSelected}
       aria-label={`${date}${isToday ? " (today)" : ""}, ${
         isTrained ? `trained${split ? `, ${split}` : ""}` : "not trained"
       }`}
       className={[
-        "tap-target relative flex h-full min-h-14 w-full min-w-0 flex-col items-center rounded-md p-1.5 text-center",
+        "tap-target flex h-full min-h-0 w-full min-w-0 flex-col items-center rounded-md p-1.5 text-center",
         PRESSABLE,
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent sm:min-h-20 sm:p-2",
-        isCursor && !isToday ? "ring-1 ring-inset ring-fg/60" : "",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent sm:p-2",
+        isCursor && !isToday && !isSelected ? "ring-1 ring-inset ring-fg/60" : "",
         isToday
-          ? "glow-box border-2 border-accent/60 hover:bg-surface/60"
-          : isTrained
-            ? "bg-surface hover:bg-fg/5"
-            : "hover:bg-surface/60",
+          ? "relative overflow-visible border border-accent/70 bg-surface/80"
+          : isSelected
+            ? "bg-fg/10 hover:bg-fg/15"
+            : isTrained && isFuture
+              ? "border border-dashed border-fg/25 hover:bg-surface/40"
+              : isTrained
+                ? "bg-surface hover:bg-fg/5"
+                : "hover:bg-surface/60",
       ].join(" ")}
     >
-      <span
-        className={`font-bold ${
-          isToday ? "text-accent" : isTrained ? statusTextClass(isFuture) : "text-fg/90"
-        }`}
-      >
-        {dayNumber}
-      </span>
-      {isTrained ? (
-        <span
-          className={`absolute top-1/2 left-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full ${
-            isFuture ? "bg-scheduled" : "bg-logged"
-          }`}
+      {isToday ? (
+        <svg
           aria-hidden
-        />
-      ) : isToday ? (
-        <span
-          className="absolute top-1/2 left-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-accent/70"
-          aria-hidden
-        />
+          className="today-stroke pointer-events-none absolute inset-0 h-full w-full overflow-visible"
+        >
+          <rect
+            x="1"
+            y="1"
+            rx="6"
+            ry="6"
+            pathLength={100}
+            className="today-lightning"
+          />
+        </svg>
       ) : null}
+      <span className={isSelected || isToday ? "font-bold text-fg" : "font-bold text-dim"}>{dayNumber}</span>
+      <span className="mt-1 flex h-2 items-center justify-center" aria-hidden>
+        {isToday ? (
+          <span className="today-dot inline-block h-2 w-2 rounded-full border border-accent" />
+        ) : isTrained && isFuture ? (
+          <span className="h-1.5 w-1.5 rounded-full bg-dim" />
+        ) : isTrained ? (
+          <span className="h-1.5 w-1.5 rounded-full bg-logged" />
+        ) : null}
+      </span>
     </button>
   );
 }
