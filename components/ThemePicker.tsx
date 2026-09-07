@@ -3,10 +3,12 @@
 import { useRef, useState } from "react";
 import { Dot } from "lucide-react";
 import { backupFilename, exportBackup, importBackup } from "@/lib/backup";
-import { PRESSABLE } from "@/lib/styles";
+import { FOCUS_RING, PRESSABLE, SECTION_LABEL } from "@/lib/styles";
 import type { PREntry, TrainedDaysMap } from "@/lib/types";
 import { isValidHex, THEME_PRESETS, type ThemeSelection } from "@/lib/theme";
 import { FormHeader } from "./DayCardContent";
+import Button from "./ui/Button";
+import Field from "./ui/Field";
 
 export type ThemeViewProps = {
   selection: ThemeSelection;
@@ -17,14 +19,6 @@ export type ThemeViewProps = {
   fill?: boolean;
   scrollClassName?: string;
 };
-
-const ACTION = [
-  "border border-border px-2 py-1.5",
-  PRESSABLE,
-  "hover:border-accent hover:text-accent",
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent",
-  "disabled:cursor-not-allowed disabled:text-dim/50 disabled:hover:border-border disabled:hover:text-dim/50",
-].join(" ");
 
 /**
  * Theme + backup body for CurrentCard. Not a modal — the card shell is the chrome.
@@ -66,9 +60,6 @@ export default function ThemeView({
     setStatus(`imported ${result.dayCount} days, ${result.prCount} prs`);
   }
 
-  const fieldClass =
-    "w-full min-w-0 appearance-none rounded-none border border-border bg-transparent px-2 py-1.5 text-fg outline-none placeholder:text-dim focus:border-accent";
-
   const scroll = fill
     ? "mt-3 min-h-0 flex-1 overflow-y-auto"
     : scrollClassName
@@ -80,7 +71,7 @@ export default function ThemeView({
       <FormHeader title="theme" onClose={onClose} />
 
       <div className={scroll}>
-        <div className="text-sm text-dim">presets</div>
+        <div className={SECTION_LABEL}>presets</div>
         <ul className="mt-1">
           {THEME_PRESETS.map((preset) => {
             const isActive = preset.id === selection.presetId;
@@ -91,9 +82,9 @@ export default function ThemeView({
                   onClick={() => onSelectPreset(preset.id)}
                   aria-pressed={isActive}
                   className={[
-                    "flex w-full items-center gap-2 px-2 py-2 text-left",
+                    "flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left",
                     PRESSABLE,
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent",
+                    FOCUS_RING,
                     isActive ? "bg-fg/10 text-fg hover:bg-fg/15" : "text-fg/90 hover:bg-fg/5",
                   ].join(" ")}
                 >
@@ -109,7 +100,7 @@ export default function ThemeView({
                       (color, index) => (
                         <span
                           key={index}
-                          className="inline-block h-3 w-3 border border-border"
+                          className="inline-block h-3 w-3 rounded-sm border border-border"
                           style={{ backgroundColor: color }}
                         />
                       ),
@@ -121,59 +112,57 @@ export default function ThemeView({
           })}
         </ul>
 
-        <div className="mt-5 text-sm text-dim">custom accent</div>
+        <div className={`${SECTION_LABEL} mt-5`}>custom accent</div>
         <div className="mt-1 flex items-center gap-2">
-          <input
-            type="text"
+          <Field
             value={hex}
             onChange={(event) => setHex(event.target.value)}
             placeholder="#b77e64"
             aria-label="Custom accent hex"
             autoComplete="off"
             spellCheck={false}
-            className={fieldClass}
           />
           <span
             aria-hidden
-            className="inline-block h-8 w-8 shrink-0 border border-border"
+            className="inline-block h-9 w-9 shrink-0 rounded-lg border border-border"
             style={{ backgroundColor: hexIsValid ? hex : "transparent" }}
           />
         </div>
         <div className="mt-2 flex gap-2">
-          <button
-            type="button"
+          <Button
+            variant="quiet"
+            size="sm"
             disabled={!hexIsValid}
             onClick={() => onSetAccent(hex.trim())}
-            className={ACTION}
           >
-            [ apply ]
-          </button>
+            apply
+          </Button>
           {selection.accent !== undefined ? (
-            <button
-              type="button"
+            <Button
+              variant="quiet"
+              size="sm"
               onClick={() => {
                 setHex("");
                 onSetAccent(undefined);
               }}
-              className={ACTION}
             >
-              [ reset ]
-            </button>
+              reset
+            </Button>
           ) : null}
         </div>
 
-        <div className="mt-5 text-sm text-dim">data</div>
+        <div className={`${SECTION_LABEL} mt-5`}>data</div>
         <p className="mt-1 text-sm text-dim">
           this log lives only in this browser. export to move it to another device or to
           back it up.
         </p>
         <div className="mt-2 flex gap-2">
-          <button type="button" onClick={handleExport} className={ACTION}>
-            [ export ]
-          </button>
-          <button type="button" onClick={() => fileInput.current?.click()} className={ACTION}>
-            [ import ]
-          </button>
+          <Button variant="quiet" size="sm" onClick={handleExport}>
+            export
+          </Button>
+          <Button variant="quiet" size="sm" onClick={() => fileInput.current?.click()}>
+            import
+          </Button>
           <input
             ref={fileInput}
             type="file"

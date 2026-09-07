@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronRight, ChevronUp, Dot } from "lucide-react";
 import { monthFullName, monthKey, monthNameYear, monthPath } from "@/lib/dates";
-import { PRESSABLE } from "@/lib/styles";
+import { FOCUS_RING, PRESSABLE } from "@/lib/styles";
 
 export type MonthDropdownProps = {
   /** Newest first. */
@@ -53,12 +53,8 @@ export default function MonthDropdown({
         aria-expanded={open}
         className={
           variant === "title"
-            ? [
-                "inline-flex items-center gap-1 text-2xl leading-none text-fg",
-                PRESSABLE,
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent",
-              ].join(" ")
-            : "cursor-pointer text-accent glow transition-colors focus-visible:outline-none"
+            ? ["inline-flex items-center gap-1 text-2xl leading-none text-fg", PRESSABLE, FOCUS_RING].join(" ")
+            : `cursor-pointer text-accent glow transition-colors ${FOCUS_RING}`
         }
       >
         {variant === "title" ? monthFullName(activeMonth) : monthPath(activeMonth)}

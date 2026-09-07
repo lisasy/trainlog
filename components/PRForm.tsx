@@ -3,6 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { suggestExercises } from "@/lib/prs";
 import type { DateKey, PREntry } from "@/lib/types";
+import Button from "./ui/Button";
+import Field from "./ui/Field";
+import TextAction from "./ui/TextAction";
 
 export type PRFormInput = {
   exerciseName: string;
@@ -32,15 +35,6 @@ export type PRFormProps = {
   onSubmit: (input: PRFormInput) => void;
   onCancel?: () => void;
 };
-
-const FIELD =
-  "w-full min-w-0 appearance-none rounded-lg border border-border bg-bg/40 px-3 py-2 text-fg outline-none transition-colors placeholder:text-dim focus:border-accent";
-
-const PRIMARY =
-  "cursor-pointer rounded-lg border border-accent px-4 py-2 text-accent transition-colors hover:bg-accent hover:text-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent disabled:cursor-not-allowed disabled:border-border disabled:text-dim/40 disabled:hover:bg-transparent disabled:hover:text-dim/40";
-
-const GHOST =
-  "cursor-pointer rounded-lg border border-transparent px-4 py-2 text-dim transition-colors hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent";
 
 export default function PRForm({
   allEntries,
@@ -96,9 +90,8 @@ export default function PRForm({
   return (
     <div className="flex flex-col gap-2">
       <div className="relative">
-        <input
+        <Field
           ref={nameInput}
-          type="text"
           value={exerciseName}
           onChange={(event) => {
             setExerciseName(event.target.value);
@@ -113,7 +106,6 @@ export default function PRForm({
           placeholder="exercise"
           aria-label="Exercise name"
           autoComplete="off"
-          className={FIELD}
         />
         {showSuggestions && suggestions.length > 0 ? (
           <ul className="absolute inset-x-0 top-full z-20 mt-1 max-h-48 overflow-y-auto rounded-lg border border-border bg-bg">
@@ -136,8 +128,7 @@ export default function PRForm({
       </div>
 
       <div className="flex gap-2">
-        <input
-          type="text"
+        <Field
           inputMode="decimal"
           value={weight}
           onChange={(event) => setWeight(event.target.value)}
@@ -146,34 +137,25 @@ export default function PRForm({
           }}
           placeholder="weight"
           aria-label="Weight"
-          className={FIELD}
         />
 
         {fixedDate === undefined ? (
-          <input
+          <Field
             type="date"
             value={date}
             onChange={(event) => setDate(event.target.value)}
             aria-label="Date"
-            // Native picker on phones; dark so it matches the rest.
-            style={{ colorScheme: "dark" }}
-            className={FIELD}
           />
         ) : null}
       </div>
 
       {fixedDate === undefined && date !== "" ? (
-        <button
-          type="button"
-          onClick={() => setDate("")}
-          className="link cursor-pointer self-start text-sm text-dim hover:text-accent focus-visible:text-accent focus-visible:outline-none"
-        >
+        <TextAction onClick={() => setDate("")} className="self-start text-sm">
           clear date (undated)
-        </button>
+        </TextAction>
       ) : null}
 
-      <input
-        type="text"
+      <Field
         value={note}
         onChange={(event) => setNote(event.target.value)}
         onKeyDown={(event) => {
@@ -181,17 +163,16 @@ export default function PRForm({
         }}
         placeholder="note (optional)"
         aria-label="Note"
-        className={FIELD}
       />
 
       <div className="mt-1 flex gap-2">
-        <button type="button" onClick={handleSubmit} disabled={!canAdd} className={PRIMARY}>
+        <Button variant="primary" onClick={handleSubmit} disabled={!canAdd}>
           {submitLabel}
-        </button>
+        </Button>
         {onCancel ? (
-          <button type="button" onClick={onCancel} className={GHOST}>
+          <Button variant="ghost" onClick={onCancel}>
             done
-          </button>
+          </Button>
         ) : null}
       </div>
     </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import type { DateKey, TrainedDay } from "@/lib/types";
-import { PRESSABLE } from "@/lib/styles";
+import { FOCUS_RING, PRESSABLE } from "@/lib/styles";
 
 export type DayCellProps = {
   date: DateKey;
@@ -55,7 +55,8 @@ export default function DayCell({
       className={[
         "tap-target flex h-full min-h-0 w-full min-w-0 flex-col items-center rounded-md p-1.5 text-center",
         PRESSABLE,
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent sm:p-2",
+        FOCUS_RING,
+        "sm:p-2",
         isCursor && !isToday && !isSelected ? "ring-1 ring-inset ring-fg/60" : "",
         isToday
           ? "relative overflow-visible border border-accent/70 bg-surface/80"

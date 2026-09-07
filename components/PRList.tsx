@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Dot } from "lucide-react";
+import { Dot, Plus } from "lucide-react";
 import { groupByExercise } from "@/lib/prs";
 import {
   exerciseInCategory,
@@ -10,9 +10,12 @@ import {
   prCardDate,
   type PRCategory,
 } from "@/lib/prCategories";
-import { PRESSABLE } from "@/lib/styles";
+import { FOCUS_RING, PRESSABLE, SECTION_LABEL } from "@/lib/styles";
 import type { PREntry } from "@/lib/types";
 import ThemeFaceButton from "./ThemeFaceButton";
+import Button from "./ui/Button";
+import IconButton from "./ui/IconButton";
+import Weight from "./ui/Weight";
 
 export type PRListProps = {
   entries: PREntry[];
@@ -25,15 +28,6 @@ export type PRListProps = {
 const MARKER = "w-[1.5ch] shrink-0";
 const DATE = "w-[10ch] shrink-0";
 const WEIGHT = "w-[8ch] shrink-0";
-
-function Weight({ value, muted }: { value: number; muted?: boolean }) {
-  return (
-    <>
-      <span className={muted ? "text-fg/90" : "text-accent"}>{value}</span>
-      <span className="text-sm text-dim"> lbs</span>
-    </>
-  );
-}
 
 /**
  * PR screen: recent wins, muscle-group chips, then the ledger. Phone chrome
@@ -58,7 +52,7 @@ export default function PRList({ entries, onAddPR, onEditPR, onOpenTheme }: PRLi
 
       {wins.length > 0 ? (
         <section className="shrink-0" aria-label="Recent wins">
-          <div className="text-sm tracking-wide text-dim uppercase">Recent wins</div>
+          <div className={SECTION_LABEL}>Recent wins</div>
           <div className="mt-2 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {wins.map((group) => (
               <button
@@ -69,7 +63,7 @@ export default function PRList({ entries, onAddPR, onEditPR, onOpenTheme }: PRLi
                   "w-[10.5rem] shrink-0 rounded-xl bg-surface p-3 text-left",
                   PRESSABLE,
                   "hover:bg-fg/10",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent",
+                  FOCUS_RING,
                 ].join(" ")}
               >
                 <div className="flex items-baseline justify-between gap-2 text-sm text-dim uppercase">
@@ -98,7 +92,7 @@ export default function PRList({ entries, onAddPR, onEditPR, onOpenTheme }: PRLi
               className={[
                 "shrink-0 rounded-lg px-3 py-1.5 uppercase",
                 PRESSABLE,
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent",
+                FOCUS_RING,
                 active
                   ? "bg-fg/15 text-fg hover:bg-fg/20"
                   : "bg-surface text-dim hover:bg-fg/10 hover:text-accent",
@@ -112,18 +106,10 @@ export default function PRList({ entries, onAddPR, onEditPR, onOpenTheme }: PRLi
 
       <div className="mt-4 min-h-0 flex-1 overflow-y-auto">
         <div className="mb-5">
-          <button
-            type="button"
-            onClick={() => onAddPR()}
-            className={[
-              "rounded-lg border border-border px-3 py-2 text-dim",
-              PRESSABLE,
-              "hover:border-accent hover:text-accent",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent",
-            ].join(" ")}
-          >
-            + add pr
-          </button>
+          <Button variant="quiet" size="sm" onClick={() => onAddPR()}>
+            <Plus size={16} aria-hidden />
+            add pr
+          </Button>
         </div>
 
         {visible.length === 0 ? (
@@ -143,19 +129,13 @@ export default function PRList({ entries, onAddPR, onEditPR, onOpenTheme }: PRLi
                     <span className="text-sm">current&nbsp;</span>
                     <Weight value={group.current.weight} />
                   </span>
-                  <button
-                    type="button"
+                  <IconButton
+                    icon={Plus}
+                    label={`Add a ${group.exerciseName} pr`}
+                    size="sm"
                     onClick={() => onAddPR(group.exerciseName)}
-                    aria-label={`Add a ${group.exerciseName} pr`}
-                    className={[
-                      "text-lg leading-none text-dim",
-                      PRESSABLE,
-                      "hover:text-accent",
-                      "focus-visible:text-accent focus-visible:outline-none",
-                    ].join(" ")}
-                  >
-                    +
-                  </button>
+                    className="-my-1"
+                  />
                 </span>
               </div>
 

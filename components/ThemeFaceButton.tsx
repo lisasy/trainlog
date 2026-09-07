@@ -1,6 +1,6 @@
 "use client";
 
-import { PRESSABLE } from "@/lib/styles";
+import { FOCUS_RING, PRESSABLE } from "@/lib/styles";
 
 export type ThemeFaceButtonProps = {
   onOpenTheme: () => void;
@@ -17,7 +17,7 @@ export default function ThemeFaceButton({ onOpenTheme }: ThemeFaceButtonProps) {
         "tap-target inline-flex h-9 w-9 items-center justify-center rounded-lg bg-surface text-fg",
         PRESSABLE,
         "hover:bg-border hover:text-accent",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent",
+        FOCUS_RING,
       ].join(" ")}
     >
       :)

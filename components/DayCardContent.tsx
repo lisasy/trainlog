@@ -7,9 +7,7 @@ import DayForm from "./DayForm";
 import PRForm, { type PRFormInput } from "./PRForm";
 import StatsPanel, { StatTiles } from "./StatsPanel";
 import YearHeatmap from "./YearHeatmap";
-
-const LINK =
-  "link cursor-pointer text-dim transition-colors hover:text-accent focus-visible:text-accent focus-visible:outline-none";
+import TextAction from "./ui/TextAction";
 
 /** Shared header row for the card's form states: `> title` + a close link. */
 export function FormHeader({ title, onClose }: { title: string; onClose: () => void }) {
@@ -19,9 +17,7 @@ export function FormHeader({ title, onClose }: { title: string; onClose: () => v
         <span className="text-dim">&gt;&nbsp;</span>
         <span className="text-fg">{title}</span>
       </span>
-      <button type="button" onClick={onClose} className={LINK}>
-        close
-      </button>
+      <TextAction onClick={onClose}>close</TextAction>
     </div>
   );
 }
@@ -59,11 +55,7 @@ export function StatsView({
     <>
       <div className="flex items-baseline justify-between gap-2">
         <span className="text-accent glow">Today</span>
-        {onOpenTheme ? (
-          <button type="button" onClick={onOpenTheme} className={LINK}>
-            theme
-          </button>
-        ) : null}
+        {onOpenTheme ? <TextAction onClick={onOpenTheme}>theme</TextAction> : null}
       </div>
       <div className="mt-0.5 text-sm tracking-wide text-dim uppercase">
         {fullDateLabel(todayKey)}
@@ -206,13 +198,9 @@ export function PRFormView({
           onSubmit={onSubmit}
         />
         {isEdit && entry ? (
-          <button
-            type="button"
-            onClick={() => onDelete(entry.id)}
-            className="link mt-5 cursor-pointer text-sm text-dim hover:text-accent focus-visible:text-accent focus-visible:outline-none"
-          >
+          <TextAction onClick={() => onDelete(entry.id)} className="mt-5 text-sm">
             delete this pr
-          </button>
+          </TextAction>
         ) : null}
       </div>
     </>

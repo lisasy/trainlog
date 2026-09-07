@@ -8,7 +8,7 @@ import {
   parseDateKey,
   WEEKDAY_LABELS,
 } from "@/lib/dates";
-import { PRESSABLE } from "@/lib/styles";
+import { FOCUS_RING, PRESSABLE } from "@/lib/styles";
 import type { DateKey, TrainedDaysMap } from "@/lib/types";
 import DayCell, { type DayCellProps } from "./DayCell";
 import MonthDropdown from "./MonthDropdown";
@@ -210,11 +210,7 @@ export default function Calendar({
             type="button"
             onClick={() => months[0] !== undefined && onActiveMonthChange(months[0])}
             aria-label="Jump to current month"
-            className={[
-              HEADER_CHIP,
-              PRESSABLE,
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent",
-            ].join(" ")}
+            className={[HEADER_CHIP, PRESSABLE, FOCUS_RING].join(" ")}
           >
             TODAY
           </button>

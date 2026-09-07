@@ -1,7 +1,7 @@
 "use client";
 
 import { BookOpen, Calendar, Images, Trophy, type LucideIcon } from "lucide-react";
-import { PRESSABLE } from "@/lib/styles";
+import { FOCUS_RING, PRESSABLE } from "@/lib/styles";
 import { VIEWS, VIEW_LABELS, type View } from "@/lib/views";
 
 const VIEW_ICONS: Record<View, LucideIcon> = {
@@ -36,7 +36,7 @@ export default function BottomNav({ view, onSelectView }: BottomNavProps) {
             className={[
               "tap-target flex items-center justify-center rounded-xl px-4 py-3",
               PRESSABLE,
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent",
+              FOCUS_RING,
               active ? "bg-fg/10 text-fg hover:bg-fg/15" : "text-dim hover:bg-fg/5 hover:text-accent",
             ].join(" ")}
           >

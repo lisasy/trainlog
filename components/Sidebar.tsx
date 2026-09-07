@@ -1,8 +1,9 @@
 "use client";
 
 import { BookOpen, Calendar, Images, Trophy, type LucideIcon } from "lucide-react";
-import { PRESSABLE } from "@/lib/styles";
+import { FOCUS_RING, PRESSABLE } from "@/lib/styles";
 import { VIEWS, VIEW_SIDEBAR_LABELS, type View } from "@/lib/views";
+import TextAction from "./ui/TextAction";
 
 const VIEW_ICONS: Record<View, LucideIcon> = {
   calendar: Calendar,
@@ -43,7 +44,7 @@ export default function Sidebar({ onOpenTheme, view, onSelectView }: SidebarProp
               className={[
                 "mb-0.5 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left",
                 PRESSABLE,
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent",
+                FOCUS_RING,
                 active
                   ? "bg-surface text-accent hover:bg-fg/10"
                   : "text-dim hover:bg-fg/5 hover:text-fg",
@@ -58,13 +59,7 @@ export default function Sidebar({ onOpenTheme, view, onSelectView }: SidebarProp
 
       <div className="flex items-baseline justify-between px-4 py-2 text-dim">
         <span>get strong</span>
-        <button
-          type="button"
-          onClick={onOpenTheme}
-          className="link cursor-pointer text-dim transition-colors hover:text-accent focus-visible:text-accent focus-visible:outline-none"
-        >
-          theme
-        </button>
+        <TextAction onClick={onOpenTheme}>theme</TextAction>
       </div>
     </aside>
   );
