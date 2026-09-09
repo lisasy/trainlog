@@ -40,9 +40,9 @@
    *   --day-stride  --day-row + the 4px row gap — the translateY unit used
    *                 to slide the stack to the focused week
    *   --year-cell   the day-cell edge in year view (a shrunk month cell) */
-  --day-cell-h: 56px;
-  --day-row: 56px;
-  --day-stride: 60px;
+  --day-cell-h: 68px;
+  --day-row: 68px;
+  --day-stride: 72px;
   --year-cell: 12px;
 }
 
