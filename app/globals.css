@@ -33,6 +33,17 @@
    * calendar/dock flex split so they ease together. */
   --sheet-duration: 420ms;
   --sheet-ease: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* Fixed month-cell geometry (phone). The day cell never resizes — every
+   * other bit of calendar layout is arranged around this box.
+   *   --day-row     .week-stack grid row track
+   *   --day-stride  --day-row + the 4px row gap — the translateY unit used
+   *                 to slide the stack to the focused week
+   *   --year-cell   the day-cell edge in year view (a shrunk month cell) */
+  --day-cell-h: 56px;
+  --day-row: 56px;
+  --day-stride: 60px;
+  --year-cell: 12px;
 }
 
 @theme inline {
@@ -354,29 +365,102 @@ body {
   transition: flex-grow var(--sheet-duration) var(--sheet-ease);
 }
 
+/*
+ * The incoming calendar grid (month or year) fades in on a keyed swap.
+ * Outgoing content is simply unmounted — no cross-fade, no transform.
+ */
+.cal-fade {
+  animation: cal-fade-in 140ms ease-out both;
+}
+
+@keyframes cal-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/*
+ * Phone month view: a fixed-height viewport that clips the week stack. At
+ * rest it's exactly tall enough for every week; when a day sheet opens it
+ * eases down to a single row and the stack slides so the focused week sits
+ * under the weekday header.
+ */
+.week-viewport {
+  overflow: hidden;
+  height: calc(var(--week-count, 6) * var(--day-stride));
+  transition: height var(--sheet-duration) var(--sheet-ease);
+}
+
+.week-viewport[data-focus="true"] {
+  height: calc(var(--day-row) + 0.5rem);
+}
+
 .week-stack {
   display: grid;
   align-content: start;
-  grid-template-rows: var(--week-rows);
-  transition: grid-template-rows var(--sheet-duration) var(--sheet-ease);
+  grid-template-rows: repeat(var(--week-count), var(--day-row));
+  transform: translateY(calc(-1 * var(--focus-week, 0) * var(--day-stride)));
+  transition: transform var(--sheet-duration) var(--sheet-ease);
+}
+
+/*
+ * Year view: the same grid, uniformly shrunk. Cells are squares (aspect-ratio
+ * on the cell) that fill their column, so they stay square and 4 mini-months
+ * per row fit at any phone width; `--year-cell` caps the edge so they don't
+ * get chunky on a wide phone. Row height follows the cell — `auto` tracks.
+ */
+.week-stack[data-density="year"] {
+  grid-template-rows: repeat(var(--week-count), auto);
+  gap: 2px;
+  max-width: calc(var(--year-cell) * 7 + 12px);
+  transform: none;
+  transition: none;
 }
 
 @media (min-width: 1024px) {
   .sheet-grow-cal {
     flex-grow: 1 !important;
+    min-height: 0 !important;
     transition: none;
+  }
+
+  .week-viewport {
+    height: auto;
+    flex: 1 1 0%;
+    min-height: 0;
+    transition: none;
+  }
+
+  .week-viewport[data-focus="true"] {
+    height: auto;
   }
 
   .week-stack {
     grid-template-rows: repeat(var(--week-count), minmax(0, 1fr));
+    transform: none;
     transition: none;
+    min-height: 0;
+    height: 100%;
+  }
+
+  .week-stack[data-density="year"] {
+    grid-template-rows: repeat(var(--week-count), auto);
+    height: auto;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .sheet-grow-cal,
   .sheet-grow-dock,
+  .week-viewport,
   .week-stack {
     transition: none;
+  }
+
+  .cal-fade {
+    animation: none;
   }
 }

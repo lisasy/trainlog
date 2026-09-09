@@ -391,6 +391,13 @@ export default function Home() {
     },
   };
 
+  // Phone: while a calendar day sheet is open, the calendar column and the
+  // dock trade flex-grow so the month collapses into a week strip and the
+  // sheet grows into a stable working height. Desktop ignores this (`.sheet-
+  // grow-*` is overridden ≥1024px) — the rail holds the form.
+  const calendarActive = view === "calendar";
+  const sheetOpen = calendarActive && sheetDate !== null;
+
   return (
     <div className="flex h-dvh w-full">
       <Sidebar onOpenTheme={() => setThemeOpen(true)} view={view} onSelectView={setView} />
@@ -421,7 +428,13 @@ export default function Home() {
           canGoNextYear={canGoNextYear}
         />
 
-        <div className="flex min-h-0 flex-1 flex-col pt-3 pb-4 sm:pt-4">
+        <div
+          className={[
+            "flex min-h-0 flex-col pt-3 pb-4 sm:pt-4",
+            calendarActive ? "sheet-grow-cal" : "flex-1",
+          ].join(" ")}
+          style={calendarActive ? { flexGrow: sheetOpen ? 0 : 1 } : undefined}
+        >
           {!mounted ? (
             <p className="text-dim">loading…</p>
           ) : view === "prs" ? (
@@ -457,7 +470,8 @@ export default function Home() {
         </div>
 
         <MobileDock
-          calendarView={view === "calendar"}
+          calendarView={calendarActive}
+          sheetOpen={sheetOpen}
           view={view}
           onSelectView={setView}
           {...currentCard}

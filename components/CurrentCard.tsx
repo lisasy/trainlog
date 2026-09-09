@@ -42,8 +42,14 @@ export type CurrentCardContentProps = {
 };
 
 export type CurrentCardProps = CurrentCardContentProps & {
-  /** Fill the rail (desktop). Phone always hugs content. */
+  /** Fill the rail (desktop). */
   fill?: boolean;
+  /**
+   * Phone, day sheet open: grow to a stable working height (capped at
+   * `min(62dvh, 520px)`) instead of hugging content, so the sheet is the
+   * same size whether the day is logged or not.
+   */
+  sheetFill?: boolean;
 };
 
 const SHELL = "rounded-2xl bg-surface";
@@ -70,6 +76,7 @@ export function cardBody(props: {
  */
 export default function CurrentCard({
   fill = false,
+  sheetFill = false,
   showStats = true,
   scrollClassName,
   themeOpen,
@@ -81,6 +88,9 @@ export default function CurrentCard({
   ...props
 }: CurrentCardProps) {
   const body = cardBody({ themeOpen, prSheet, sheetDate, showStats });
+  // Both the desktop rail (`fill`) and the phone day sheet (`sheetFill`)
+  // render the flex column layout with an internally-scrolling body.
+  const filling = fill || sheetFill;
 
   useEffect(() => {
     if (body === null || body === "stats") return;
@@ -103,7 +113,7 @@ export default function CurrentCard({
       todayKey={props.todayKey}
       onOpenTheme={props.onOpenTheme}
       statsDirection={props.statsDirection}
-      fill={fill}
+      fill={filling}
     />
   );
   if (body === "theme") {
@@ -114,7 +124,7 @@ export default function CurrentCard({
         onSetAccent={props.onSetAccent}
         onImported={props.onImported}
         onClose={onCloseTheme}
-        fill={fill}
+        fill={filling}
         scrollClassName={scrollClassName}
       />
     );
@@ -127,7 +137,7 @@ export default function CurrentCard({
         onSubmit={props.onSubmitPR}
         onDelete={props.onDeletePR}
         onClose={onClosePR}
-        fill={fill}
+        fill={filling}
         scrollClassName={scrollClassName}
       />
     );
@@ -142,7 +152,7 @@ export default function CurrentCard({
         onClearDay={props.onClearDay}
         onRemovePR={props.onRemovePR}
         onClose={onCloseSheet}
-        fill={fill}
+        fill={filling}
         scrollClassName={scrollClassName}
       />
     );
@@ -155,7 +165,9 @@ export default function CurrentCard({
         "p-4",
         fill
           ? "flex h-full min-h-0 flex-col"
-          : "max-h-[42dvh] overflow-y-auto lg:max-h-none",
+          : sheetFill
+            ? "flex h-full min-h-0 flex-col max-h-[min(62dvh,520px)]"
+            : "max-h-[42dvh] overflow-y-auto lg:max-h-none",
       ].join(" ")}
     >
       {inner}
