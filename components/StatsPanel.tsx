@@ -1,8 +1,7 @@
 "use client";
 
 import { groupByExercise } from "@/lib/prs";
-import type { DateKey, PREntry, TrainedDaysMap } from "@/lib/types";
-import YearHeatmap from "./YearHeatmap";
+import type { PREntry } from "@/lib/types";
 
 const STREAK_THRESHOLD = "3d/w";
 
@@ -47,34 +46,6 @@ export function StatTiles({ streakWeeks, prEntries, direction = "row", className
       <Tile label="streak" caption={STREAK_THRESHOLD} value={streakWeeks} unit="weeks" />
       {topPR ? (
         <Tile label="pr" caption={topPR.exerciseName} value={topPR.current.weight} unit="lbs" />
-      ) : null}
-    </div>
-  );
-}
-
-export type StatsPanelProps = {
-  streakWeeks: number;
-  prEntries: PREntry[];
-  trainedDays: TrainedDaysMap;
-  todayKey: DateKey;
-  direction?: "row" | "col";
-  className?: string;
-};
-
-/** Tiles + year heatmap, stacked — the phone dock's stats block. */
-export default function StatsPanel({
-  streakWeeks,
-  prEntries,
-  trainedDays,
-  todayKey,
-  direction = "row",
-  className = "",
-}: StatsPanelProps) {
-  return (
-    <div className={`flex flex-col gap-3 ${className}`}>
-      <StatTiles streakWeeks={streakWeeks} prEntries={prEntries} direction={direction} />
-      {todayKey !== "" ? (
-        <YearHeatmap year={Number(todayKey.slice(0, 4))} trainedDays={trainedDays} todayKey={todayKey} />
       ) : null}
     </div>
   );

@@ -2,7 +2,8 @@
 
 import { BookOpen, Calendar, Images, Trophy, type LucideIcon } from "lucide-react";
 import { FOCUS_RING, PRESSABLE } from "@/lib/styles";
-import { VIEWS, VIEW_LABELS, type View } from "@/lib/views";
+import { VIEWS, VIEW_LABELS, VIEW_NAV_TITLES, type View } from "@/lib/views";
+import Tip from "./ui/Tip";
 
 const VIEW_ICONS: Record<View, LucideIcon> = {
   calendar: Calendar,
@@ -34,13 +35,14 @@ export default function BottomNav({ view, onSelectView }: BottomNavProps) {
             aria-current={active ? "page" : undefined}
             aria-label={VIEW_LABELS[name]}
             className={[
-              "tap-target flex items-center justify-center rounded-xl px-4 py-3",
+              "group relative tap-target flex items-center justify-center rounded-xl px-4 py-3",
               PRESSABLE,
               FOCUS_RING,
               active ? "bg-fg/10 text-fg hover:bg-fg/15" : "text-dim hover:bg-fg/5 hover:text-accent",
             ].join(" ")}
           >
             <Icon size={22} aria-hidden />
+            <Tip className="bottom-full left-1/2 mb-2 -translate-x-1/2">{VIEW_NAV_TITLES[name]}</Tip>
           </button>
         );
       })}

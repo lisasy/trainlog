@@ -2,6 +2,9 @@
 
 import type { DateKey, TrainedDay } from "@/lib/types";
 import { FOCUS_RING, PRESSABLE } from "@/lib/styles";
+import Tip from "./ui/Tip";
+
+export type DayCellDensity = "month" | "year";
 
 export type DayCellProps = {
   date: DateKey;
@@ -14,6 +17,8 @@ export type DayCellProps = {
   isSelected: boolean;
   trainedDay?: TrainedDay;
   onTap: (date: DateKey) => void;
+  /** Year density is paint-only heatmap cells. Same component, both layouts. */
+  density?: DayCellDensity;
 };
 
 /**
@@ -31,9 +36,31 @@ export default function DayCell({
   isSelected,
   trainedDay,
   onTap,
+  density = "month",
 }: DayCellProps) {
   const isTrained = trainedDay !== undefined;
   const split = trainedDay?.split;
+
+  if (density === "year") {
+    if (!inMonth) {
+      return <div aria-hidden className="h-full min-h-0 w-full min-w-0" />;
+    }
+    const tone = !isTrained
+      ? "bg-fg/10"
+      : isFuture
+        ? "bg-scheduled"
+        : "bg-logged";
+    return (
+      <span
+        aria-hidden
+        className={[
+          "pointer-events-none h-full min-h-0 w-full min-w-0 rounded-[2px]",
+          tone,
+          isToday ? "ring-1 ring-inset ring-accent" : "",
+        ].join(" ")}
+      />
+    );
+  }
 
   if (!inMonth) {
     return (
@@ -53,7 +80,7 @@ export default function DayCell({
         isTrained ? `trained${split ? `, ${split}` : ""}` : "not trained"
       }`}
       className={[
-        "tap-target flex h-full min-h-0 w-full min-w-0 flex-col items-center rounded-md p-1.5 text-center",
+        "group relative z-0 tap-target flex h-full min-h-0 w-full min-w-0 flex-col items-center overflow-visible rounded-md p-1.5 text-center hover:z-10",
         PRESSABLE,
         FOCUS_RING,
         "sm:p-2",
@@ -85,6 +112,9 @@ export default function DayCell({
         </svg>
       ) : null}
       <span className={isSelected || isToday ? "font-bold text-fg" : "font-bold text-dim"}>{dayNumber}</span>
+      {split ? (
+        <Tip className="bottom-2 left-1/2 hidden -translate-x-1/2 lg:block">{split}</Tip>
+      ) : null}
       <span className="mt-1 flex h-2 items-center justify-center" aria-hidden>
         {isToday ? (
           <span className="today-dot inline-block h-2 w-2 rounded-full border border-accent" />

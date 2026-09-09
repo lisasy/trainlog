@@ -18,7 +18,7 @@ import type { DateKey } from "./types";
  */
 export const WEEKDAY_LABELS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
 
-const MONTH_LABELS = [
+export const MONTH_LABELS = [
   "jan", "feb", "mar", "apr", "may", "jun",
   "jul", "aug", "sep", "oct", "nov", "dec",
 ] as const;
@@ -93,16 +93,22 @@ export function monthKey(date: Date): string {
 }
 
 /**
- * Navigable range: March 2026 (the start of the transcribed history) through
- * the current month. Nothing earlier is relevant, and the future isn't
- * something you can look at — only the current month can be scheduled into.
+ * Navigable range: March 2026 (start of transcribed history) through December
+ * of the current year. Earlier months in the year still render in year view
+ * but are inert. Days after today stay future-styled; you can still open them.
  */
 export const EARLIEST_MONTH_KEY = "2026-03";
+
+/** Last month you can page into: December of `today`'s year. */
+export function latestMonthKey(today: DateKey): string {
+  if (today === "") return "";
+  return `${today.slice(0, 4)}-12`;
+}
 
 /** "YYYY-MM" strings compare correctly as plain strings. */
 export function isMonthKeyInRange(month: string, today: DateKey): boolean {
   if (today === "") return true;
-  return month >= EARLIEST_MONTH_KEY && month <= today.slice(0, 7);
+  return month >= EARLIEST_MONTH_KEY && month <= latestMonthKey(today);
 }
 
 export function isMonthInRange(month: Date, today: DateKey): boolean {
@@ -113,13 +119,28 @@ export function isDateKeyInRange(key: DateKey, today: DateKey): boolean {
   return isMonthKeyInRange(key.slice(0, 7), today);
 }
 
+/** Jan–Dec of `year`. */
+export function monthsInYear(year: number): Date[] {
+  return Array.from({ length: 12 }, (_, month) => new Date(year, month, 1));
+}
+
+/** Years that contain at least one in-range month, oldest first. */
+export function yearsInRange(today: DateKey): number[] {
+  if (today === "") return [];
+  const first = Number(EARLIEST_MONTH_KEY.slice(0, 4));
+  const last = Number(today.slice(0, 4));
+  const years: number[] = [];
+  for (let year = first; year <= last; year += 1) years.push(year);
+  return years;
+}
+
 /** The sidebar's month list: current month first, back to the earliest. */
 export function monthListInRange(today: DateKey): Date[] {
   if (today === "") return [];
   const [earliestYear, earliestMonth] = EARLIEST_MONTH_KEY.split("-").map(Number);
   const first = earliestYear * 12 + (earliestMonth - 1);
   const current = parseDateKey(today);
-  const last = current.getFullYear() * 12 + current.getMonth();
+  const last = current.getFullYear() * 12 + 11;
 
   const months: Date[] = [];
   for (let i = last; i >= first; i -= 1) {

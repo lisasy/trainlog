@@ -22,9 +22,9 @@ export type CurrentCardContentProps = {
   /** Resting body is stats (calendar / desktop rail). */
   showStats?: boolean;
   sheetDate: DateKey | null;
+  onMarkCompleted: (date: DateKey) => void;
   onSelectSplit: (date: DateKey, split: Split) => void;
   onClearDay: (date: DateKey) => void;
-  onAddPR: (date: DateKey, input: { exerciseName: string; weight: number; note?: string }) => void;
   onRemovePR: (id: string) => void;
   onCloseSheet: () => void;
   prSheet: PRSheet | null;
@@ -100,7 +100,6 @@ export default function CurrentCard({
     <StatsView
       streakWeeks={props.streakWeeks}
       prEntries={props.prEntries}
-      trainedDays={props.trainedDays}
       todayKey={props.todayKey}
       onOpenTheme={props.onOpenTheme}
       statsDirection={props.statsDirection}
@@ -138,9 +137,9 @@ export default function CurrentCard({
         date={sheetDate}
         prEntries={props.prEntries}
         trainedDays={props.trainedDays}
+        onMarkCompleted={props.onMarkCompleted}
         onSelectSplit={props.onSelectSplit}
         onClearDay={props.onClearDay}
-        onAddPR={props.onAddPR}
         onRemovePR={props.onRemovePR}
         onClose={onCloseSheet}
         fill={fill}

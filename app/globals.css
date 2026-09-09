@@ -167,7 +167,8 @@ body {
 }
 
 @media (hover: hover) {
-  .group:hover .tip {
+  .group:hover .tip,
+  .group:focus-visible .tip {
     opacity: 1;
   }
 }

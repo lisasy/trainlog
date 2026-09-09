@@ -1,23 +1,22 @@
 "use client";
 
-import { dayLabel, fullDateLabel } from "@/lib/dates";
+import { fullDateLabel } from "@/lib/dates";
 import { entriesForDate } from "@/lib/prs";
 import type { DateKey, PREntry, Split, TrainedDaysMap } from "@/lib/types";
 import DayForm from "./DayForm";
 import PRForm, { type PRFormInput } from "./PRForm";
-import StatsPanel, { StatTiles } from "./StatsPanel";
-import YearHeatmap from "./YearHeatmap";
+import { StatTiles } from "./StatsPanel";
+import Button from "./ui/Button";
 import TextAction from "./ui/TextAction";
 
-/** Shared header row for the card's form states: `> title` + a close link. */
+/** Shared header row for the card's form states: uppercase title + close. */
 export function FormHeader({ title, onClose }: { title: string; onClose: () => void }) {
   return (
-    <div className="flex shrink-0 items-baseline justify-between gap-2">
-      <span className="truncate">
-        <span className="text-dim">&gt;&nbsp;</span>
-        <span className="text-fg">{title}</span>
-      </span>
-      <TextAction onClick={onClose}>close</TextAction>
+    <div className="flex shrink-0 items-center justify-between gap-2">
+      <h2 className="min-w-0 truncate tracking-wide text-fg uppercase">{title}</h2>
+      <Button variant="ghost" size="sm" onClick={onClose}>
+        close
+      </Button>
     </div>
   );
 }
@@ -31,21 +30,18 @@ function scrollBody(fill: boolean, scrollClassName?: string) {
 export type StatsViewProps = {
   streakWeeks: number;
   prEntries: PREntry[];
-  trainedDays: TrainedDaysMap;
   todayKey: DateKey;
   /** Renders a `theme` link beside the heading when provided. */
   onOpenTheme?: () => void;
   /** Tile layout: "row" (phone dock) or "col" (narrow siderail). */
   statsDirection?: "row" | "col";
-  /** Let the heatmap grow to fill the card. */
   fill?: boolean;
 };
 
-/** The "current card": today's date, the stat tiles, the year heatmap. */
+/** The "current card": today's date and the stat tiles. */
 export function StatsView({
   streakWeeks,
   prEntries,
-  trainedDays,
   todayKey,
   onOpenTheme,
   statsDirection = "row",
@@ -63,44 +59,16 @@ export function StatsView({
     </>
   );
 
-  // Filling a tall column: keep the date + tiles at the top and drop the
-  // heatmap to the bottom, space between.
-  if (fill) {
-    return (
-      <div className="flex min-h-0 flex-1 flex-col justify-between gap-6">
-        <div className="shrink-0">
-          {heading}
-          <StatTiles
-            streakWeeks={streakWeeks}
-            prEntries={prEntries}
-            direction={statsDirection}
-            className="mt-4"
-          />
-        </div>
-        {todayKey !== "" ? (
-          <YearHeatmap
-            year={Number(todayKey.slice(0, 4))}
-            trainedDays={trainedDays}
-            todayKey={todayKey}
-            fill
-          />
-        ) : null}
-      </div>
-    );
-  }
-
   return (
-    <>
+    <div className={fill ? "flex min-h-0 flex-1 flex-col" : ""}>
       {heading}
-      <StatsPanel
+      <StatTiles
         streakWeeks={streakWeeks}
         prEntries={prEntries}
-        trainedDays={trainedDays}
-        todayKey={todayKey}
         direction={statsDirection}
         className="mt-4"
       />
-    </>
+    </div>
   );
 }
 
@@ -108,9 +76,9 @@ export type DayFormViewProps = {
   date: DateKey;
   prEntries: PREntry[];
   trainedDays: TrainedDaysMap;
+  onMarkCompleted: (date: DateKey) => void;
   onSelectSplit: (date: DateKey, split: Split) => void;
   onClearDay: (date: DateKey) => void;
-  onAddPR: (date: DateKey, input: { exerciseName: string; weight: number; note?: string }) => void;
   onRemovePR: (id: string) => void;
   onClose: () => void;
   /** Scroll fills the card's remaining height. */
@@ -124,9 +92,9 @@ export function DayFormView({
   date,
   prEntries,
   trainedDays,
+  onMarkCompleted,
   onSelectSplit,
   onClearDay,
-  onAddPR,
   onRemovePR,
   onClose,
   fill = false,
@@ -134,16 +102,14 @@ export function DayFormView({
 }: DayFormViewProps) {
   return (
     <>
-      <FormHeader title={dayLabel(date)} onClose={onClose} />
+      <FormHeader title={fullDateLabel(date)} onClose={onClose} />
       <div className={scrollBody(fill, scrollClassName)}>
         <DayForm
-          date={date}
           trainedDay={trainedDays[date]}
           entries={entriesForDate(prEntries, date)}
-          allEntries={prEntries}
+          onMarkCompleted={() => onMarkCompleted(date)}
           onSelectSplit={(split) => onSelectSplit(date, split)}
           onClearDay={() => onClearDay(date)}
-          onAddPR={(input) => onAddPR(date, input)}
           onRemovePR={onRemovePR}
         />
       </div>

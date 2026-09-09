@@ -1,67 +1,64 @@
 "use client";
 
 import { X } from "lucide-react";
-import { FOCUS_RING, SECTION_LABEL } from "@/lib/styles";
-import { SPLITS, type DateKey, type PREntry, type Split, type TrainedDay } from "@/lib/types";
-import PRForm from "./PRForm";
+import { SECTION_LABEL } from "@/lib/styles";
+import { SPLITS, type PREntry, type Split, type TrainedDay } from "@/lib/types";
+import Button from "./ui/Button";
 import IconButton from "./ui/IconButton";
-import TextAction from "./ui/TextAction";
 import Weight from "./ui/Weight";
 
 export type DayFormProps = {
-  date: DateKey;
   trainedDay?: TrainedDay;
   entries: PREntry[];
-  allEntries: PREntry[];
+  onMarkCompleted: () => void;
   onSelectSplit: (split: Split) => void;
   onClearDay: () => void;
-  onAddPR: (input: { exerciseName: string; weight: number; note?: string }) => void;
   onRemovePR: (id: string) => void;
 };
 
 /** The body of the day editor — shared by the phone dock and the desktop panel. */
 export default function DayForm({
-  date,
   trainedDay,
   entries,
-  allEntries,
+  onMarkCompleted,
   onSelectSplit,
   onClearDay,
-  onAddPR,
   onRemovePR,
 }: DayFormProps) {
   const isTrained = trainedDay !== undefined;
 
   return (
     <div>
-      <div className={SECTION_LABEL}>split</div>
-      <div className="mt-2 grid grid-cols-4 gap-1.5">
-        {SPLITS.map((split) => {
-          const active = trainedDay?.split === split;
-          return (
-            <button
-              key={split}
-              type="button"
-              onClick={() => onSelectSplit(split)}
-              aria-pressed={active}
-              className={[
-                "rounded-lg border px-1 py-2.5 text-sm uppercase transition-colors",
-                FOCUS_RING,
-                active ? "border-accent text-accent" : "border-border text-dim hover:text-accent",
-              ].join(" ")}
-            >
-              {split}
-            </button>
-          );
-        })}
-      </div>
+      <Button
+        variant={isTrained ? "quiet" : "primary"}
+        pressed={isTrained}
+        onClick={isTrained ? onClearDay : onMarkCompleted}
+        className="w-full"
+      >
+        {isTrained ? "Completed" : "Mark Completed"}
+      </Button>
+
       {isTrained ? (
-        <TextAction onClick={onClearDay} className="mt-2 text-sm">
-          clear this day
-        </TextAction>
-      ) : (
-        <p className="mt-2 text-sm text-dim">pick a split to log this day</p>
-      )}
+        <>
+          <div className={`${SECTION_LABEL} mt-5`}>split</div>
+          <div className="mt-2 grid grid-cols-4 gap-1.5">
+            {SPLITS.map((split) => {
+              const active = trainedDay?.split === split;
+              return (
+                <Button
+                  key={split}
+                  size="sm"
+                  pressed={active}
+                  onClick={() => onSelectSplit(split)}
+                  className="w-full uppercase"
+                >
+                  {split}
+                </Button>
+              );
+            })}
+          </div>
+        </>
+      ) : null}
 
       <div className={`${SECTION_LABEL} mt-5`}>prs</div>
       {entries.length === 0 ? (
@@ -91,15 +88,6 @@ export default function DayForm({
           ))}
         </ul>
       )}
-
-      <div className={`${SECTION_LABEL} mt-5`}>add pr</div>
-      <div className="mt-2">
-        <PRForm
-          allEntries={allEntries}
-          fixedDate={date}
-          onSubmit={({ exerciseName, weight, note }) => onAddPR({ exerciseName, weight, note })}
-        />
-      </div>
     </div>
   );
 }

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronRight, ChevronUp, Dot } from "lucide-react";
 import { monthFullName, monthKey, monthNameYear, monthPath } from "@/lib/dates";
-import { FOCUS_RING, PRESSABLE } from "@/lib/styles";
+import { FOCUS_RING, PAGE_TITLE, PRESSABLE } from "@/lib/styles";
 
 export type MonthDropdownProps = {
   /** Newest first. */
@@ -53,7 +53,7 @@ export default function MonthDropdown({
         aria-expanded={open}
         className={
           variant === "title"
-            ? ["inline-flex items-center gap-1 text-2xl leading-none text-fg", PRESSABLE, FOCUS_RING].join(" ")
+            ? ["inline-flex items-center gap-1", PAGE_TITLE, PRESSABLE, FOCUS_RING].join(" ")
             : `cursor-pointer text-accent glow transition-colors ${FOCUS_RING}`
         }
       >

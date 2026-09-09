@@ -84,6 +84,7 @@ const DAY_CELL_STATES: {
 export default function ThemePage() {
   const [presetId, setPresetId] = useState(THEME_PRESETS[0].id);
   const [navView, setNavView] = useState<"calendar" | "prs" | "splits" | "gallery">("calendar");
+  const [demoCompleted, setDemoCompleted] = useState(true);
   const [demoSplit, setDemoSplit] = useState<Split | undefined>("lower");
 
   const previewVars = resolveTheme({ presetId });
@@ -631,27 +632,28 @@ export default function ThemePage() {
             cancel is <Code>&lt;Button variant=&quot;ghost&quot;&gt;</Code>.
           </Note>
 
-          <Stage label="DayForm — split tiles, .link clear, attached-PR rows (real, interactive)">
+          <Stage label="DayForm — complete toggle, optional split, attached-PR rows">
             <div className="w-full max-w-sm">
               <DayForm
-                date={REF_TODAY}
-                trainedDay={demoSplit ? { date: REF_TODAY, split: demoSplit } : undefined}
+                trainedDay={
+                  demoCompleted
+                    ? { date: REF_TODAY, ...(demoSplit ? { split: demoSplit } : {}) }
+                    : undefined
+                }
                 entries={SEED_ENTRIES.filter((e) => e.date === "2026-08-18").slice(0, 2)}
-                allEntries={SEED_ENTRIES}
-                onSelectSplit={(s) => setDemoSplit(s)}
-                onClearDay={() => setDemoSplit(undefined)}
-                onAddPR={noop}
+                onMarkCompleted={() => setDemoCompleted(true)}
+                onSelectSplit={(s) => setDemoSplit((current) => (current === s ? undefined : s))}
+                onClearDay={() => {
+                  setDemoCompleted(false);
+                  setDemoSplit(undefined);
+                }}
                 onRemovePR={noop}
               />
             </div>
           </Stage>
           <Note>
-            Split tiles: a 4-up grid of <Code>rounded-lg border</Code> toggles,{" "}
-            <Code>aria-pressed</Code>, active = accent border + text. The attached-PR row&apos;s{" "}
-            <Code>X</Code> is a 14px lucide icon button (dim → accent). These tiles are the
-            fourth distinct &ldquo;selectable option&rdquo; pattern in the app (with{" "}
-            <Code>BottomNav</Code>, the sidebar nav, and the dropdown rows) — backlog P1 calls
-            for one <Code>&lt;OptionGroup&gt;</Code>.
+            A day is completed first. Split tiles only appear after{" "}
+            <Code>Completed</Code>, and are optional — tap the active split to clear it.
           </Note>
         </Section>
 
@@ -679,8 +681,7 @@ export default function ThemePage() {
             </Spec>
             <Spec name=".tip" value="90ms linear">
               Hover tooltip opacity, gated behind <Code>@media (hover: hover)</Code> so it never
-              latches open on touch. <span className="text-accent">No <Code>.tip</Code> element
-              currently rendered.</span>
+              latches open on touch. Day-cell splits (desktop) and BottomNav labels.
             </Spec>
             <Spec name="blink" value="1.1s steps(1)">
               The terminal cursor block beside the wordmark. Off under reduced motion.

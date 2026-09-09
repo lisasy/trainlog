@@ -14,6 +14,8 @@ export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
    */
   variant?: ButtonVariant;
   size?: ButtonSize;
+  /** Selected state for chips / split tiles. Overrides `variant` color. */
+  pressed?: boolean;
   children: ReactNode;
 };
 
@@ -32,9 +34,12 @@ const VARIANTS: Record<ButtonVariant, string> = {
   ghost: "border border-transparent text-dim hover:text-accent",
 };
 
+const PRESSED = "bg-fg/15 text-fg hover:bg-fg/20";
+
 export default function Button({
   variant = "quiet",
   size = "md",
+  pressed = false,
   type = "button",
   className = "",
   children,
@@ -43,8 +48,16 @@ export default function Button({
   return (
     <button
       type={type}
-      className={[BASE, PRESSABLE, FOCUS_RING, SIZES[size], VARIANTS[variant], className].join(" ")}
+      className={[
+        BASE,
+        PRESSABLE,
+        FOCUS_RING,
+        SIZES[size],
+        pressed ? PRESSED : VARIANTS[variant],
+        className,
+      ].join(" ")}
       {...rest}
+      aria-pressed={pressed ? true : rest["aria-pressed"]}
     >
       {children}
     </button>

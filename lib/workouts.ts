@@ -42,13 +42,19 @@ export function getTrainedDay(days: TrainedDaysMap, date: DateKey): TrainedDay |
  * already marked. Any notes already on the day survive.
  */
 export function markTrained(days: TrainedDaysMap, date: DateKey, split: string): TrainedDaysMap {
-  const existing = days[date] ?? { date };
-  return { ...days, [date]: { ...existing, date, split } };
+  return setSplit(markCompleted(days, date), date, split);
 }
 
 /**
- * Unmarks a day, dropping the whole entry — split and all. The checkbox habit
- * this mirrors has no "trained but blank" state.
+ * Gym-done, no split required. A day already marked is left as-is.
+ */
+export function markCompleted(days: TrainedDaysMap, date: DateKey): TrainedDaysMap {
+  if (date in days) return days;
+  return { ...days, [date]: { date } };
+}
+
+/**
+ * Unmarks a day, dropping the whole entry — split and all.
  */
 export function clearTrainedDay(days: TrainedDaysMap, date: DateKey): TrainedDaysMap {
   if (!(date in days)) return days;
@@ -57,10 +63,11 @@ export function clearTrainedDay(days: TrainedDaysMap, date: DateKey): TrainedDay
   return next;
 }
 
-/** Marks the day trained if it wasn't already — split implies a session. */
+/** Sets or clears the split on a day that's already completed. */
 export function setSplit(days: TrainedDaysMap, date: DateKey, split: string): TrainedDaysMap {
   const trimmed = split.trim();
-  const existing = days[date] ?? { date };
+  const existing = days[date];
+  if (existing === undefined) return days;
   const next: TrainedDay = { ...existing, split: trimmed === "" ? undefined : trimmed };
   if (next.split === undefined) delete next.split;
   return { ...days, [date]: next };

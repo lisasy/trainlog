@@ -1,12 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import NavButton from "@/components/NavButton";
+import AppHeader from "@/components/AppHeader";
 import Calendar from "@/components/Calendar";
 import MobileDock from "@/components/MobileDock";
 import RightRail from "@/components/RightRail";
-import MonthDropdown from "@/components/MonthDropdown";
 import PRList from "@/components/PRList";
 import type { PRSheet } from "@/components/DayCardContent";
 import type { PRFormInput } from "@/components/PRForm";
@@ -21,8 +19,9 @@ import {
   shiftMonthKeepDay,
   startOfMonth,
   todayKey as getTodayKey,
+  yearsInRange,
 } from "@/lib/dates";
-import { VIEW_SIDEBAR_LABELS, type View } from "@/lib/views";
+import { type View } from "@/lib/views";
 import {
   addPREntry,
   applySeed,
@@ -50,9 +49,10 @@ import {
   isSeedDate,
   loadRemovedSeedDates,
   loadTrainedDays,
-  markTrained,
+  markCompleted,
   saveRemovedSeedDates,
   saveTrainedDays,
+  setSplit,
 } from "@/lib/workouts";
 
 export default function Home() {
@@ -72,6 +72,8 @@ export default function Home() {
   const [themeOpen, setThemeOpen] = useState(false);
   const [cursorDate, setCursorDate] = useState<DateKey | null>(null);
   const [view, setView] = useState<View>("calendar");
+  const [yearView, setYearView] = useState(false);
+  const [yearFocus, setYearFocus] = useState(() => new Date().getFullYear());
   /** Ledger form: an entry to edit, a name to prefill, or closed. */
   const [prSheet, setPRSheet] = useState<PRSheet | null>(null);
 
@@ -86,6 +88,7 @@ export default function Home() {
   const cursorRef = useRef<DateKey | null>(null);
   const monthRef = useRef<Date>(month);
   const viewRef = useRef(view);
+  const yearViewRef = useRef(yearView);
 
   useEffect(() => {
     cursorRef.current = cursorDate;
@@ -97,10 +100,20 @@ export default function Home() {
 
   useEffect(() => {
     viewRef.current = view;
+    yearViewRef.current = false;
+    setYearView(false);
     // Each form belongs to one view; leaving that view closes it.
     if (view !== "calendar") setSheetDate(null);
     if (view !== "prs") setPRSheet(null);
   }, [view]);
+
+  useEffect(() => {
+    yearViewRef.current = yearView;
+  }, [yearView]);
+
+  useEffect(() => {
+    if (!yearView) setYearFocus(month.getFullYear());
+  }, [month, yearView]);
 
   useEffect(() => {
     const today = getTodayKey();
@@ -142,6 +155,33 @@ export default function Home() {
         target !== null &&
         (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)
       ) {
+        return;
+      }
+
+      if (yearViewRef.current) {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          setYearView(false);
+          return;
+        }
+        if (event.key === "ArrowLeft" || event.key === "h") {
+          event.preventDefault();
+          setYearFocus((year) => {
+            const years = yearsInRange(todayKey);
+            const index = years.indexOf(year);
+            return index > 0 ? years[index - 1] : year;
+          });
+          return;
+        }
+        if (event.key === "ArrowRight" || event.key === "l") {
+          event.preventDefault();
+          setYearFocus((year) => {
+            const years = yearsInRange(todayKey);
+            const index = years.indexOf(year);
+            return index !== -1 && index < years.length - 1 ? years[index + 1] : year;
+          });
+          return;
+        }
         return;
       }
 
@@ -239,12 +279,44 @@ export default function Home() {
   }
 
   function jumpToToday() {
-    setMonth(startOfMonth(parseDateKey(getTodayKey())));
+    const today = getTodayKey();
+    const todayMonth = startOfMonth(parseDateKey(today));
+    setMonth(todayMonth);
+    setYearFocus(todayMonth.getFullYear());
+    setYearView(false);
   }
 
   const countsByMonth = useMemo(() => countTrainedByMonth(trainedDays), [trainedDays]);
   const currentMonth = mounted ? startOfMonth(parseDateKey(todayKey)) : month;
   const months = useMemo(() => monthListInRange(todayKey), [todayKey]);
+  const yearOptions = useMemo(() => yearsInRange(todayKey), [todayKey]);
+  const yearIndex = yearOptions.indexOf(yearFocus);
+  const canGoPrevYear = yearIndex > 0;
+  const canGoNextYear = yearIndex !== -1 && yearIndex < yearOptions.length - 1;
+
+  function stepYear(direction: 1 | -1) {
+    const next = yearOptions[yearIndex + direction];
+    if (next === undefined) return;
+    setYearFocus(next);
+  }
+
+  function openYearView() {
+    setSheetDate(null);
+    setYearFocus(month.getFullYear());
+    setYearView(true);
+  }
+
+  function toggleYearView() {
+    if (yearView) setYearView(false);
+    else openYearView();
+  }
+
+  function pickYearMonth(next: Date) {
+    setMonth(next);
+    setYearFocus(next.getFullYear());
+    setView("calendar");
+    setYearView(false);
+  }
 
   // Desktop header's month nav: `months` is newest-first, so index 0 is the
   // current month and higher indices are further in the past.
@@ -254,7 +326,12 @@ export default function Home() {
 
   function goToMonth(next: Date) {
     setMonth(next);
+    setYearFocus(next.getFullYear());
     setView("calendar");
+    setYearView(false);
+    setSheetDate((current) =>
+      current !== null && isSameMonth(current, next) ? current : null,
+    );
   }
 
   function stepMonth(direction: 1 | -1) {
@@ -266,7 +343,6 @@ export default function Home() {
     () => currentStreakWeeks(trainedDays, todayKey),
     [trainedDays, todayKey],
   );
-  const monthCount = Object.keys(trainedDays).filter((key) => isSameMonth(key, month)).length;
 
   // One card, two mounts (phone dock / desktop rail). Theme replaces the
   // current body; close restores because sheetDate / prSheet stay set.
@@ -276,11 +352,12 @@ export default function Home() {
     trainedDays,
     todayKey,
     sheetDate: view === "calendar" ? sheetDate : null,
-    onSelectSplit: (date: DateKey, split: Split) =>
-      commitDays(markTrained(trainedDays, date, split)),
+    onMarkCompleted: (date: DateKey) => commitDays(markCompleted(trainedDays, date)),
+    onSelectSplit: (date: DateKey, split: Split) => {
+      const current = trainedDays[date]?.split;
+      commitDays(setSplit(trainedDays, date, current === split ? "" : split));
+    },
     onClearDay: handleClearDay,
-    onAddPR: (date: DateKey, input: { exerciseName: string; weight: number; note?: string }) =>
-      commitPRs(addPREntry(prEntries, { ...input, date })),
     onRemovePR: handleRemovePR,
     onCloseSheet: () => setSheetDate(null),
     prSheet: view === "prs" ? prSheet : null,
@@ -318,48 +395,31 @@ export default function Home() {
     <div className="flex h-dvh w-full">
       <Sidebar onOpenTheme={() => setThemeOpen(true)} view={view} onSelectView={setView} />
 
-      <main className="relative flex h-dvh min-w-0 flex-1 flex-col overflow-hidden px-4 pt-[env(safe-area-inset-top)] pb-0 lg:pt-0 lg:pb-[max(1rem,env(safe-area-inset-bottom))]">
-        {/* Desktop only — phones navigate from the bottom nav and the month
-            row above the calendar, so this whole bar is gratuitous there. */}
-        <header className="hidden h-11 shrink-0 items-center justify-between gap-3 pt-2 lg:flex">
-          {view === "calendar" ? (
-            <>
-              <span className="flex items-center gap-2">
-                <span className="text-dim">:</span>
-                <NavButton
-                  label={<ChevronLeft size={16} />}
-                  onClick={() => stepMonth(-1)}
-                  ariaLabel="Previous month"
-                  disabled={!canGoPrevMonth}
-                />
-                <MonthDropdown
-                  months={months}
-                  activeMonth={month}
-                  countsByMonth={countsByMonth}
-                  currentMonthKey={monthKey(currentMonth)}
-                  onSelectMonth={goToMonth}
-                />
-                <NavButton
-                  label={<ChevronRight size={16} />}
-                  onClick={() => stepMonth(1)}
-                  ariaLabel="Next month"
-                  disabled={!canGoNextMonth}
-                />
-                <NavButton
-                  label="today"
-                  onClick={() => {
-                    jumpToToday();
-                    setView("calendar");
-                  }}
-                  ariaLabel="Jump to current month"
-                />
-              </span>
-              <span className="shrink-0 text-dim">{mounted ? `${monthCount} trained` : "…"}</span>
-            </>
-          ) : (
-            <span className="text-accent">{VIEW_SIDEBAR_LABELS[view]}</span>
-          )}
-        </header>
+      <main className="relative flex h-dvh min-w-0 flex-1 flex-col overflow-hidden px-4 pb-0 lg:pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <AppHeader
+          view={view}
+          onOpenTheme={() => setThemeOpen(true)}
+          months={months}
+          activeMonth={month}
+          countsByMonth={countsByMonth}
+          currentMonthKey={monthKey(currentMonth)}
+          onSelectMonth={goToMonth}
+          onPrevMonth={() => stepMonth(-1)}
+          onNextMonth={() => stepMonth(1)}
+          canGoPrevMonth={canGoPrevMonth}
+          canGoNextMonth={canGoNextMonth}
+          onToday={() => {
+            jumpToToday();
+            setView("calendar");
+          }}
+          yearView={yearView}
+          yearFocus={yearFocus}
+          onToggleYearView={toggleYearView}
+          onPrevYear={() => stepYear(-1)}
+          onNextYear={() => stepYear(1)}
+          canGoPrevYear={canGoPrevYear}
+          canGoNextYear={canGoNextYear}
+        />
 
         <div className="flex min-h-0 flex-1 flex-col pt-3 pb-4 sm:pt-4">
           {!mounted ? (
@@ -369,7 +429,6 @@ export default function Home() {
               entries={prEntries}
               onAddPR={(exerciseName) => setPRSheet({ mode: "add", exerciseName })}
               onEditPR={handleEditPR}
-              onOpenTheme={() => setThemeOpen(true)}
             />
           ) : view === "splits" ? (
             <div className="flex flex-1 items-center justify-center text-dim">splits — not built yet</div>
@@ -378,24 +437,20 @@ export default function Home() {
           ) : (
             <div className="flex min-h-0 flex-1 flex-col">
               <Calendar
-                months={months}
                 activeMonth={month}
                 todayKey={todayKey}
                 trainedDays={trainedDays}
                 cursorDate={cursorDate}
-                onActiveMonthChange={(next) => {
-                  setMonth(next);
-                  setSheetDate((current) =>
-                    current !== null && isSameMonth(current, next) ? current : null,
-                  );
-                }}
                 onTap={(date) =>
                   setSheetDate((current) => (current === date ? null : date))
                 }
-                countsByMonth={countsByMonth}
-                currentMonthKey={monthKey(currentMonth)}
-                onOpenTheme={() => setThemeOpen(true)}
                 sheetDate={sheetDate}
+                yearView={yearView}
+                yearFocus={yearFocus}
+                onPickMonth={pickYearMonth}
+                onStepYear={stepYear}
+                canGoPrevYear={canGoPrevYear}
+                canGoNextYear={canGoNextYear}
               />
             </div>
           )}

@@ -1,9 +1,10 @@
 /**
  * Shared data model for trainlog.
  *
- * Mirrors the user's actual workflow: a daily "gym: done" checkbox plus a
- * running per-exercise weight+date PR log. Deliberately NOT a set-by-set
- * workout logger — see the spec's data model notes.
+ * Mirrors the user's actual workflow: a daily "gym: done" checkbox, an
+ * optional split on completed days, plus a running per-exercise weight+date
+ * PR log. Deliberately NOT a set-by-set workout logger — see the spec's data
+ * model notes.
  */
 
 /** A date in local-time `YYYY-MM-DD` form. Never an ISO timestamp. */

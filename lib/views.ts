@@ -18,3 +18,18 @@ export const VIEW_SIDEBAR_LABELS: Record<View, string> = {
   splits: "splits",
   gallery: "gallery",
 };
+
+/** Large page titles — same type as the calendar month. */
+export const VIEW_PAGE_TITLES: Record<Exclude<View, "calendar">, string> = {
+  prs: "PRs",
+  splits: "Splits",
+  gallery: "Gallery",
+};
+
+/** Icon-nav hover labels. */
+export const VIEW_NAV_TITLES: Record<View, string> = {
+  calendar: "Calendar",
+  prs: "PRs",
+  splits: "Splits",
+  gallery: "Gallery",
+};

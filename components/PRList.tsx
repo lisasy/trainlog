@@ -12,7 +12,6 @@ import {
 } from "@/lib/prCategories";
 import { FOCUS_RING, PRESSABLE, SECTION_LABEL } from "@/lib/styles";
 import type { PREntry } from "@/lib/types";
-import ThemeFaceButton from "./ThemeFaceButton";
 import Button from "./ui/Button";
 import IconButton from "./ui/IconButton";
 import Weight from "./ui/Weight";
@@ -21,7 +20,6 @@ export type PRListProps = {
   entries: PREntry[];
   onAddPR: (exerciseName?: string) => void;
   onEditPR: (entry: PREntry) => void;
-  onOpenTheme: () => void;
 };
 
 /** Shared column widths, so every row's date and weight line up exactly. */
@@ -30,11 +28,10 @@ const DATE = "w-[10ch] shrink-0";
 const WEIGHT = "w-[8ch] shrink-0";
 
 /**
- * PR screen: recent wins, muscle-group chips, then the ledger. Phone chrome
- * matches the calendar (title + theme face). Desktop title sits in the
- * content column next to the sidebar nav.
+ * PR screen: recent wins, muscle-group chips, then the ledger.
+ * Page title lives in AppHeader.
  */
-export default function PRList({ entries, onAddPR, onEditPR, onOpenTheme }: PRListProps) {
+export default function PRList({ entries, onAddPR, onEditPR }: PRListProps) {
   const [category, setCategory] = useState<PRCategory>("all");
   const groups = useMemo(() => groupByExercise(entries), [entries]);
   const visible = useMemo(
@@ -45,11 +42,6 @@ export default function PRList({ entries, onAddPR, onEditPR, onOpenTheme }: PRLi
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex shrink-0 items-center justify-between pb-3 lg:hidden">
-        <h1 className="text-fg">PRs</h1>
-        <ThemeFaceButton onOpenTheme={onOpenTheme} />
-      </div>
-
       {wins.length > 0 ? (
         <section className="shrink-0" aria-label="Recent wins">
           <div className={SECTION_LABEL}>Recent wins</div>
@@ -84,22 +76,15 @@ export default function PRList({ entries, onAddPR, onEditPR, onOpenTheme }: PRLi
         {PR_CATEGORIES.map((id) => {
           const active = category === id;
           return (
-            <button
+            <Button
               key={id}
-              type="button"
+              size="sm"
+              pressed={active}
               onClick={() => setCategory(id)}
-              aria-pressed={active}
-              className={[
-                "shrink-0 rounded-lg px-3 py-1.5 uppercase",
-                PRESSABLE,
-                FOCUS_RING,
-                active
-                  ? "bg-fg/15 text-fg hover:bg-fg/20"
-                  : "bg-surface text-dim hover:bg-fg/10 hover:text-accent",
-              ].join(" ")}
+              className="uppercase"
             >
               {PR_CATEGORY_LABELS[id]}
-            </button>
+            </Button>
           );
         })}
       </div>
@@ -116,7 +101,7 @@ export default function PRList({ entries, onAddPR, onEditPR, onOpenTheme }: PRLi
           <div className="text-dim">
             <p>{groups.length === 0 ? "no prs yet." : "nothing in this group."}</p>
             {groups.length === 0 ? (
-              <p className="mt-1 text-sm">add one above, or attach one to a day from the calendar.</p>
+              <p className="mt-1 text-sm">add one above.</p>
             ) : null}
           </div>
         ) : (
