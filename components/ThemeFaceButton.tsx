@@ -14,9 +14,9 @@ export default function ThemeFaceButton({ onOpenTheme }: ThemeFaceButtonProps) {
       onClick={onOpenTheme}
       aria-label="Theme"
       className={[
-        "tap-target inline-flex h-9 w-9 items-center justify-center rounded-lg bg-surface text-fg",
+        "tap-target inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[#ef3232] text-sm font-semibold text-white",
         PRESSABLE,
-        "hover:bg-border hover:text-accent",
+        "hover:bg-[#ef3232]/85",
         FOCUS_RING,
       ].join(" ")}
     >

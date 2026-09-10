@@ -32,7 +32,7 @@ export const THEME_PRESETS: ThemePreset[] = [
     label: "zenwritten",
     vars: {
       bg: "#191919",
-      surface: "#242424",
+      surface: "#1f1f1f",
       fg: "#bbbbbb",
       accent: "#b77e64",
       // See app/globals.css: lifted for WCAG AA (was #7d7472, 3.9:1).

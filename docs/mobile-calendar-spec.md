@@ -28,9 +28,9 @@ never resizes.** Everything else is layout around it.
 | Weekday header row | visible, pinned | visible, pinned (does not move) | none | — |
 | `.week-stack` grid rows | `repeat(weekCount, var(--day-row))` fixed px | same fixed px | none | — |
 | `.week-stack` vertical position | `translateY(0)` | `translateY(-(weekIndex × var(--day-stride)))` | `transform` | `--sheet-duration` `--sheet-ease` |
-| Calendar board height | `flex-grow: 1` (fills to dock) | `flex-grow: 0` → collapses to header + 1 row (`~92px`) | `flex-grow` | `--sheet-duration` `--sheet-ease` |
+| Calendar board height | content: header + `weekCount × --day-stride` | viewport clips to 1 row (`~92px`) | `.week-viewport` `height` | `--sheet-duration` `--sheet-ease` |
 | Calendar board `overflow` | `hidden` | `hidden` — clips the non-focused weeks | none | — |
-| CurrentCard / dock | stats body, height hugs content | **fixed target height** `min(62dvh, …)`, `flex-grow: 1` | `flex-grow` | `--sheet-duration` `--sheet-ease` |
+| CurrentCard / dock | **fills leftover** under the full month | **fills leftover** under one week | falls out of calendar height | `--sheet-duration` `--sheet-ease` |
 | Selected-cell ring | absent | `ring-1 ring-inset ring-fg/70` fades in | color/opacity (fold into `PRESSABLE` transition list) | `100ms` |
 | Month ↔ year swap | — | (separate gesture, see §5) | `opacity` cross-fade only | `140ms ease-out` |
 | Today marker pulse / lightning | looping (existing) | unchanged | existing | existing |
@@ -99,11 +99,9 @@ which day is selected, and of the dock's height.
 - Cell dimensions at 390px: width `≈ 48px`
   (`(390 − 28px board px − 24px col-gap) ÷ 7`), height `56px` → a calm ~6:7
   portrait tile. `≥ 44px` in both axes, so the touch target is honest.
-- At rest the grid is shorter than the available area. Top-align it under the
-  weekday header (`align-content: start` already does this) and let the leftover
-  space fall between the grid and the resting stats card — that gap is
-  acceptable and reads calmer than stretched cells (see settled screenshot
-  `08-month-after-zoom`, which already has this gap and looks right).
+- At rest the grid is content-sized (fixed week rows). The dock / stats sheet
+  fills the leftover under it — there is no min-height on the calendar column
+  and no empty gap between the last week and the sheet.
 - Desktop (`≥1024px`) is unchanged: the `@media (min-width:1024px)` block in
   `globals.css:364` keeps `.week-stack` on `1fr` rows and `flex-grow: 1`. Only
   add: on desktop, ignore `--day-row` and keep the current fill behavior.
@@ -146,19 +144,11 @@ the calendar shifts so only that day's week shows above the sheet.
 
 Three things move together, all on `--sheet-duration` / `--sheet-ease`:
 
-**a. The dock grows to a fixed height.**
-Wire `.sheet-grow-dock` onto the dock's growable wrapper and `.sheet-grow-cal`
-onto the calendar column (the `<div className="flex min-h-0 flex-1 flex-col">`
-at `page.tsx:438` and the dock wrapper in `MobileDock.tsx:33`). When
-`sheetDate !== null`:
-- calendar column `flex-grow: 1 → 0`
-- dock `flex-grow: 0 → 1`
-- The dock's `CurrentCard` drops `max-h-[42dvh]` and content-hug while a day
-  sheet is open; instead it fills its flex space up to a cap of
-  `min(62dvh, 520px)`. Its body scrolls internally (`overflow-y-auto`,
-  already there for the non-fill branch) if the split + PRs overflow.
-- Result: the sheet is the **same height whether the day is logged or not** —
-  killing the feedback loop that caused issue 1.
+**a. The dock always fills leftover space.**
+The calendar column is `flex-grow: 0` and sizes to the week viewport. The
+dock is `flex-grow: 1` in both rest and week-focus. Rest vs full sheet height
+is only the difference between a full-month viewport and a one-week
+viewport — two discrete heights, same sheet chrome.
 
 **b. The calendar board collapses to one week.**
 The board (`Calendar.tsx:308`, `<div ref={boardRef} className="relative
@@ -182,8 +172,8 @@ transitions `grid-template-rows`):
 Non-focused weeks stay mounted and simply clip — cheaper than animating grid
 tracks to `0`, and the fixed-size cells never reflow.
 
-**d. Closing.** Reverse all three. `sheetDate → null` restores
-`--focus-week: 0`, `flex-grow` 1/0, board grows back, stack slides home.
+**d. Closing.** Reverse the viewport height and `--focus-week`. The sheet
+returns to the rest leftover under the full month.
 
 **e. Keep the weekday header visible** above the focused week the whole time —
 it's the only remaining "this is a calendar" cue while collapsed.

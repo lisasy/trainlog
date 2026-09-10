@@ -2,6 +2,7 @@
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { PAGE_TITLE } from "@/lib/styles";
+import { monthFullName } from "@/lib/dates";
 import { VIEW_PAGE_TITLES, type View } from "@/lib/views";
 import MonthDropdown from "./MonthDropdown";
 import NavButton from "./NavButton";
@@ -71,15 +72,20 @@ export default function AppHeader({
   const title =
     view !== "calendar" ? (
       <h1 className={PAGE_TITLE}>{VIEW_PAGE_TITLES[view]}</h1>
-    ) : yearView ? null : (
-      <MonthDropdown
-        variant="title"
-        months={months}
-        activeMonth={activeMonth}
-        countsByMonth={countsByMonth}
-        currentMonthKey={currentMonthKey}
-        onSelectMonth={onSelectMonth}
-      />
+    ) : yearView ? (
+      <h1 className={`${PAGE_TITLE} px-1`}>{yearFocus}</h1>
+    ) : (
+      <div className="flex items-center gap-2">
+        <h1 className={`${PAGE_TITLE} px-1`}>{monthFullName(activeMonth)}</h1>
+        <MonthDropdown
+          variant="chevron"
+          months={months}
+          activeMonth={activeMonth}
+          countsByMonth={countsByMonth}
+          currentMonthKey={currentMonthKey}
+          onSelectMonth={onSelectMonth}
+        />
+      </div>
     );
 
   const canGoPrev = yearView ? canGoPrevYear : canGoPrevMonth;

@@ -18,15 +18,18 @@ export type CurrentCardContentProps = {
   prEntries: PREntry[];
   trainedDays: TrainedDaysMap;
   todayKey: DateKey;
-  statsDirection?: "row" | "col";
   /** Resting body is stats (calendar / desktop rail). */
   showStats?: boolean;
+  yearView?: boolean;
+  yearFocus?: number;
   sheetDate: DateKey | null;
   onMarkCompleted: (date: DateKey) => void;
   onSelectSplit: (date: DateKey, split: Split) => void;
   onClearDay: (date: DateKey) => void;
   onRemovePR: (id: string) => void;
   onCloseSheet: () => void;
+  onOpenToday?: () => void;
+  onOpenPRs?: () => void;
   prSheet: PRSheet | null;
   onSubmitPR: (input: PRFormInput) => void;
   onDeletePR: (id: string) => void;
@@ -44,15 +47,15 @@ export type CurrentCardContentProps = {
 export type CurrentCardProps = CurrentCardContentProps & {
   /** Fill the rail (desktop). */
   fill?: boolean;
-  /**
-   * Phone, day sheet open: grow to a stable working height (capped at
-   * `min(62dvh, 520px)`) instead of hugging content, so the sheet is the
-   * same size whether the day is logged or not.
-   */
+  /** Phone dock: fill the leftover under the calendar (rest or week-focus). */
   sheetFill?: boolean;
+  /** Phone dock: edge-to-edge sheet with a large top radius. */
+  bleed?: boolean;
 };
 
 const SHELL = "rounded-2xl bg-surface";
+const BLEED =
+  "rounded-t-[32px] bg-[linear-gradient(to_bottom,var(--surface),var(--bg))]";
 
 export type CardBody = "theme" | "pr" | "day" | "stats";
 
@@ -77,6 +80,7 @@ export function cardBody(props: {
 export default function CurrentCard({
   fill = false,
   sheetFill = false,
+  bleed = false,
   showStats = true,
   scrollClassName,
   themeOpen,
@@ -110,10 +114,13 @@ export default function CurrentCard({
     <StatsView
       streakWeeks={props.streakWeeks}
       prEntries={props.prEntries}
+      trainedDays={props.trainedDays}
       todayKey={props.todayKey}
-      onOpenTheme={props.onOpenTheme}
-      statsDirection={props.statsDirection}
+      onOpenToday={props.onOpenToday}
+      onOpenPRs={props.onOpenPRs}
       fill={filling}
+      variant={props.yearView ? "year" : "month"}
+      yearFocus={props.yearFocus}
     />
   );
   if (body === "theme") {
@@ -145,6 +152,7 @@ export default function CurrentCard({
     inner = (
       <DayFormView
         date={sheetDate}
+        todayKey={props.todayKey}
         prEntries={props.prEntries}
         trainedDays={props.trainedDays}
         onMarkCompleted={props.onMarkCompleted}
@@ -154,23 +162,23 @@ export default function CurrentCard({
         onClose={onCloseSheet}
         fill={filling}
         scrollClassName={scrollClassName}
+        homeChrome={bleed && !fill}
       />
     );
   }
 
-  return (
-    <div
-      className={[
-        SHELL,
-        "p-4",
-        fill
-          ? "flex h-full min-h-0 flex-col"
-          : sheetFill
-            ? "flex h-full min-h-0 flex-col max-h-[min(62dvh,520px)]"
-            : "max-h-[42dvh] overflow-y-auto lg:max-h-none",
-      ].join(" ")}
-    >
-      {inner}
-    </div>
-  );
+  const phoneSheet = bleed && !fill;
+  const shell = phoneSheet
+    ? [
+        BLEED,
+        "flex w-full flex-col overflow-hidden px-6 pt-8 pb-6",
+        sheetFill ? "h-full min-h-0" : "",
+      ].join(" ")
+    : fill
+      ? `${SHELL} flex h-full min-h-0 flex-col p-4`
+      : sheetFill
+        ? `${SHELL} flex h-full min-h-0 flex-col p-4`
+        : `${SHELL} p-4 max-h-[42dvh] overflow-y-auto lg:max-h-none`;
+
+  return <div className={shell}>{inner}</div>;
 }

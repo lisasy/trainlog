@@ -22,14 +22,9 @@ export type DayCellProps = {
 };
 
 /**
- * The cell is two independent layers:
- *
- *   1. Identity — a status-driven fill + a marker dot. Always rendered; a
- *      completed past day, a scheduled future day, today, and an empty day
- *      each read differently without hovering.
- *   2. Selection — an inset ring laid *over* the identity, never replacing
- *      it. Selecting a completed day keeps its warm fill and dot and adds a
- *      ring.
+ * Month cells match the Figma rest calendar: a number, an optional status
+ * fill/dot, and an inset ring for selection. Identity and selection stay
+ * independent so a completed day keeps its fill when selected.
  *
  * Year density collapses to a paint-only square: the same fill palette at a
  * fixed small size, no number, no button.
@@ -48,7 +43,8 @@ export default function DayCell({
 }: DayCellProps) {
   const isTrained = trainedDay !== undefined;
   const split = trainedDay?.split;
-  const isCompleted = isTrained && !isFuture;
+  const completed = isTrained && !isFuture;
+  const scheduled = isTrained && isFuture;
 
   if (density === "year") {
     if (!inMonth) {
@@ -71,36 +67,19 @@ export default function DayCell({
     );
   }
 
-  if (!inMonth) {
-    return (
-      <div aria-hidden className="h-[var(--day-cell-h)] w-full min-w-0" />
-    );
-  }
-
-  // Layer 1 — identity fill + chrome, decided by the day's own status.
-  const identityClass = isToday
-    ? isTrained
-      ? "border border-accent/70 bg-logged/12 hover:bg-logged/20"
-      : "border border-accent/70 bg-surface/80 hover:bg-surface"
-    : isTrained && isFuture
-      ? "border border-dashed border-fg/25 hover:bg-surface/40"
-      : isCompleted
-        ? "bg-logged/12 hover:bg-logged/20"
-        : isSelected
-          ? "bg-fg/10 hover:bg-fg/15"
-          : "hover:bg-surface/60";
-
-  // Layer 2 — selection / cursor ring, orthogonal to the fill above.
-  const ringClass = isSelected
-    ? isToday
-      ? "ring-1 ring-inset ring-accent"
-      : "ring-1 ring-inset ring-fg/70"
-    : isCursor && !isToday
-      ? "ring-1 ring-inset ring-fg/60"
-      : "";
-
-  const numberClass =
-    isToday || isSelected || isCompleted ? "font-bold text-fg" : "font-bold text-dim";
+  const fillClass = completed ? "bg-surface hover:bg-border" : "hover:bg-surface/80";
+  const dashClass = scheduled ? "border border-dashed border-fg/40" : "";
+  const ringClass =
+    isSelected || isToday
+      ? "ring-1 ring-inset ring-logged"
+      : isCursor
+        ? "ring-1 ring-inset ring-fg/60"
+        : "";
+  const numberClass = !inMonth
+    ? "text-dim/30"
+    : completed
+      ? "text-logged"
+      : "text-fg/90";
 
   return (
     <button
@@ -111,44 +90,23 @@ export default function DayCell({
         isTrained ? `trained${split ? `, ${split}` : ""}` : "not trained"
       }`}
       className={[
-        "group relative z-0 tap-target flex h-[var(--day-cell-h)] w-full min-w-0 flex-col items-center overflow-visible rounded-md p-1.5 text-center hover:z-10",
+        "group relative z-0 tap-target flex h-[var(--day-cell-h)] w-full min-w-0 flex-col items-center rounded-md p-1.5 text-center hover:z-10 lg:h-full lg:min-h-0 lg:justify-center",
         PRESSABLE,
         FOCUS_RING,
-        "sm:p-2",
-        identityClass,
+        fillClass,
+        dashClass,
         ringClass,
       ].join(" ")}
     >
-      {isToday ? (
-        <svg
-          aria-hidden
-          className="today-stroke pointer-events-none absolute inset-0 h-full w-full overflow-visible"
-        >
-          <rect
-            x="1"
-            y="1"
-            rx="6"
-            ry="6"
-            pathLength={100}
-            className="today-lightning"
-          />
-        </svg>
-      ) : null}
-      <span className={numberClass}>{dayNumber}</span>
+      <span className={`font-bold ${numberClass}`}>{dayNumber}</span>
       {split ? (
         <Tip className="bottom-2 left-1/2 hidden -translate-x-1/2 lg:block">{split}</Tip>
       ) : null}
-      <span className="mt-1 flex h-2 items-center justify-center" aria-hidden>
-        {isToday ? (
-          isCompleted ? (
-            <span className="h-1.5 w-1.5 rounded-full bg-logged" />
-          ) : (
-            <span className="today-dot inline-block h-2 w-2 rounded-full border border-accent" />
-          )
-        ) : isTrained && isFuture ? (
-          <span className="h-1.5 w-1.5 rounded-full bg-dim" />
-        ) : isCompleted ? (
-          <span className="h-1.5 w-1.5 rounded-full bg-logged" />
+      <span className="mt-0.5 flex h-1.5 items-center justify-center" aria-hidden>
+        {completed ? (
+          <span className="size-1.5 rounded-full bg-logged" />
+        ) : scheduled ? (
+          <span className="size-1.5 rounded-full border border-fg/50" />
         ) : null}
       </span>
     </button>

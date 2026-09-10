@@ -77,7 +77,7 @@ function MonthDayGrid({
 
   return (
     <div
-      className={["week-stack", isYear ? "" : "mt-1.5 gap-y-1"].join(" ")}
+      className={["week-stack", isYear ? "" : "gap-y-1"].join(" ")}
       data-density={density}
       style={
         {
@@ -90,13 +90,13 @@ function MonthDayGrid({
         <div
           key={week[0]}
           data-week-start={week[0]}
-          className="relative z-0 min-h-0 overflow-visible"
+          className="relative z-0 h-full min-h-0 overflow-visible"
         >
           <div
             className={
               isYear
-                ? "grid grid-cols-7 gap-[2px]"
-                : "grid grid-cols-7 gap-x-1 px-1.5 sm:px-2"
+                ? "grid grid-cols-7 gap-[2px] lg:gap-1"
+                : "grid h-full grid-cols-7 gap-x-1 px-1.5 sm:px-2"
             }
           >
             {week.map((dateKey) => (
@@ -130,15 +130,10 @@ function MonthView({
   // exact per month, not padded to a fixed 6.
   const weekCount = buildMonthGrid(month).length;
   return (
-    <div
-      className={[
-        "flex min-h-0 flex-1 flex-col",
-        focus ? "justify-end" : "",
-      ].join(" ")}
-    >
+    <div className="flex flex-col lg:min-h-0 lg:flex-1">
       <WeekdayHeader />
       <div
-        className="week-viewport mt-1.5 min-h-0"
+        className="week-viewport mt-1.5 min-h-0 lg:flex-1"
         data-focus={focus ? "true" : "false"}
         style={{ "--week-count": String(weekCount) } as CSSProperties}
       >
@@ -169,7 +164,7 @@ function YearGrid({
 
   return (
     <div
-      className="grid min-h-0 flex-1 grid-cols-4 grid-rows-3 gap-x-2 gap-y-5 px-1 pt-2 pb-3 sm:gap-x-3 sm:gap-y-6 sm:px-2"
+      className="grid h-full min-h-0 grid-cols-4 grid-rows-3 gap-x-2 gap-y-5 px-1 pt-2 pb-3 sm:gap-x-3 sm:gap-y-6 sm:px-2 lg:flex-1 lg:gap-x-6 lg:gap-y-6 lg:px-3 lg:pt-2 lg:pb-3"
       aria-label={`${yearFocus} months`}
       onPointerDown={(event) => {
         swipeStartX.current = event.clientX;
@@ -200,7 +195,7 @@ function YearGrid({
             key={key}
             data-month-slot={key}
             className={[
-              "min-h-0 rounded-lg px-0.5 py-1.5",
+              "flex min-h-0 flex-col rounded-lg px-0.5 py-1.5 lg:h-full lg:px-2 lg:py-3",
               enabled
                 ? `${PRESSABLE} ${FOCUS_RING} hover:bg-surface`
                 : "pointer-events-none opacity-35",
@@ -225,7 +220,9 @@ function YearGrid({
                 {MONTH_LABELS[month.getMonth()]}
               </div>
             </div>
-            <MonthDayGrid month={month} density="year" {...gridProps} />
+            <div className="year-heatmap-slot mt-1 min-h-0 lg:flex-1">
+              <MonthDayGrid month={month} density="year" {...gridProps} />
+            </div>
           </div>
         );
       })}
@@ -261,11 +258,11 @@ export default function Calendar({
   return (
     <section
       aria-label={yearView ? `${yearFocus} year` : "Training calendar"}
-      className="relative flex min-h-0 flex-1 flex-col overflow-hidden"
+      className="relative flex flex-col overflow-hidden lg:min-h-0 lg:flex-1"
     >
       <div
         key={yearView ? "year" : activeKey}
-        className="cal-fade flex min-h-0 flex-1 flex-col"
+        className="cal-fade flex flex-col lg:min-h-0 lg:flex-1"
       >
         {yearView ? (
           <YearGrid

@@ -177,7 +177,7 @@ export default function ThemePage() {
               The page ground. <Code>bg-bg</Code>, and the <Code>html/body</Code> background so
               iOS rubber-band doesn&apos;t flash white.
             </Swatch>
-            <Swatch color="#242424" name="--surface">
+            <Swatch color="#1f1f1f" name="--surface">
               One step up from <Code>bg</Code>. Cards, chips, pills, the floating{" "}
               <Code>CARD</Code>, dock veil target — elevation without a border.
             </Swatch>
@@ -271,7 +271,12 @@ export default function ThemePage() {
                 preview · <span className="text-fg">{presetId}</span>
               </p>
               <div className="mt-3">
-                <StatTiles streakWeeks={3} prEntries={SEED_ENTRIES} />
+                <StatTiles
+                  streakWeeks={3}
+                  prEntries={SEED_ENTRIES}
+                  trainedDays={SEED_DAYS}
+                  todayKey={REF_TODAY}
+                />
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
                 <span className="rounded-lg bg-surface px-3 py-1.5 text-dim">surface chip</span>

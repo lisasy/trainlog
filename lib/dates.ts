@@ -23,6 +23,15 @@ export const MONTH_LABELS = [
   "jul", "aug", "sep", "oct", "nov", "dec",
 ] as const;
 
+/** English month titles — no `toLocaleString`, so SSR and the client match. */
+export const MONTH_FULL_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+] as const;
+
+const WEEKDAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
+const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
+
 export function toDateKey(date: Date): DateKey {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -74,7 +83,7 @@ export function monthLabel(date: Date): string {
 
 /** e.g. "September" — the prominent month title on the phone calendar. */
 export function monthFullName(date: Date): string {
-  return date.toLocaleString("en-US", { month: "long" });
+  return MONTH_FULL_NAMES[date.getMonth()];
 }
 
 /** e.g. "aug 2026" — reads better in a narrow sidebar list. */
@@ -155,10 +164,18 @@ export function dayLabel(key: DateKey): string {
   return `${WEEKDAY_LABELS[parseDateKey(key).getDay()]} ${key}`;
 }
 
-/** Human date for the stats card, e.g. "sat aug 29, 2026". */
+/** Human date for the home card, e.g. "Fri Sep 4, 2026". */
 export function fullDateLabel(key: DateKey): string {
+  if (key.length < 10) return "";
   const date = parseDateKey(key);
-  return `${WEEKDAY_LABELS[date.getDay()]} ${MONTH_LABELS[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+  return `${WEEKDAY_SHORT[date.getDay()]} ${MONTH_SHORT[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+}
+
+/** Compact caption, e.g. "Wed Sep 9". */
+export function compactDateLabel(key: DateKey): string {
+  if (key.length < 10) return "";
+  const date = parseDateKey(key);
+  return `${WEEKDAY_SHORT[date.getDay()]} ${MONTH_SHORT[date.getMonth()]} ${date.getDate()}`;
 }
 
 export function isSameMonth(key: DateKey, month: Date): boolean {

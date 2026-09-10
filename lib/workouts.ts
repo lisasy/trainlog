@@ -1,4 +1,4 @@
-import { parseDateKey, shiftDateKey, toDateKey } from "./dates";
+import { isMonthKeyInRange, MONTH_FULL_NAMES, parseDateKey, shiftDateKey, toDateKey } from "./dates";
 import { isSeedDate, seedTrainedDays } from "./seed";
 import { read, write } from "./storage";
 import type { DateKey, TrainedDay, TrainedDaysMap } from "./types";
@@ -124,6 +124,106 @@ export function currentStreakWeeks(
     week = shiftDateKey(week, -7);
   }
   return streak;
+}
+
+/**
+ * Mean trained days per Sunday-start week, over the last `weeks` weeks
+ * (including the in-progress one). Future days don't count.
+ */
+export function avgDaysPerWeek(
+  days: TrainedDaysMap,
+  today: DateKey,
+  weeks = 4,
+): number {
+  if (today === "" || weeks <= 0) return 0;
+  const windowStart = shiftDateKey(weekStartKey(today), -7 * (weeks - 1));
+  let total = 0;
+  for (const date of Object.keys(days)) {
+    if (date > today || date < windowStart) continue;
+    total += 1;
+  }
+  return Math.round((total / weeks) * 10) / 10;
+}
+
+/** Trained-day counts for each month of `year`. Future dates don't count. */
+function trainedByMonthInYear(
+  days: TrainedDaysMap,
+  year: number,
+  today: DateKey,
+): number[] {
+  const counts = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+  if (today === "") return counts;
+  const prefix = `${year}-`;
+  for (const date of Object.keys(days)) {
+    if (!date.startsWith(prefix) || date > today) continue;
+    counts[Number(date.slice(5, 7)) - 1] += 1;
+  }
+  return counts;
+}
+
+/**
+ * Months in `year` that have started (month ≤ today's month) and are
+ * navigable. Jan/Feb 2026 render in year view but stay out of the average
+ * because they're before `EARLIEST_MONTH_KEY`.
+ */
+function startedInRangeMonthCount(year: number, today: DateKey): number {
+  if (today === "") return 0;
+  const todayMonth = today.slice(0, 7);
+  let count = 0;
+  for (let month = 0; month < 12; month += 1) {
+    const key = `${year}-${String(month + 1).padStart(2, "0")}`;
+    if (key > todayMonth || !isMonthKeyInRange(key, today)) continue;
+    count += 1;
+  }
+  return count;
+}
+
+/**
+ * Mean trained days per started, in-range month of `year`. Future days
+ * don't count. One decimal.
+ */
+export function avgDaysInMonth(
+  days: TrainedDaysMap,
+  year: number,
+  today: DateKey,
+): number {
+  const months = startedInRangeMonthCount(year, today);
+  if (months === 0) return 0;
+  const total = trainedByMonthInYear(days, year, today).reduce((sum, n) => sum + n, 0);
+  return Math.round((total / months) * 10) / 10;
+}
+
+/**
+ * Full month name with the most trained days in `year` (past/completed only).
+ * Ties go to the latest month. None → null.
+ */
+export function mostActiveMonth(
+  days: TrainedDaysMap,
+  year: number,
+  today: DateKey,
+): string | null {
+  const counts = trainedByMonthInYear(days, year, today);
+  let best = -1;
+  let bestCount = 0;
+  for (let month = 0; month < 12; month += 1) {
+    if (counts[month] >= bestCount && counts[month] > 0) {
+      best = month;
+      bestCount = counts[month];
+    }
+  }
+  return best === -1 ? null : MONTH_FULL_NAMES[best];
+}
+
+/**
+ * Trained days in `year` with date ≤ today — past/completed only, same
+ * cutoff as streak.
+ */
+export function totalDaysShownUp(
+  days: TrainedDaysMap,
+  year: number,
+  today: DateKey,
+): number {
+  return trainedByMonthInYear(days, year, today).reduce((sum, n) => sum + n, 0);
 }
 
 /**

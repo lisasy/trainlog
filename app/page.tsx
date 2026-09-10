@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AppHeader from "@/components/AppHeader";
 import Calendar from "@/components/Calendar";
+import BottomNav from "@/components/BottomNav";
 import MobileDock from "@/components/MobileDock";
 import RightRail from "@/components/RightRail";
 import PRList from "@/components/PRList";
@@ -66,14 +67,14 @@ export default function Home() {
   const [trainedDays, setTrainedDays] = useState<TrainedDaysMap>({});
   const [prEntries, setPREntries] = useState<PREntry[]>([]);
   const [todayKey, setTodayKey] = useState<DateKey>("");
-  const [month, setMonth] = useState<Date>(() => new Date());
+  const [month, setMonth] = useState(() => new Date(2026, 2, 1));
   const [sheetDate, setSheetDate] = useState<DateKey | null>(null);
   const [theme, setTheme] = useState<ThemeSelection>({ presetId: "zenwritten" });
   const [themeOpen, setThemeOpen] = useState(false);
   const [cursorDate, setCursorDate] = useState<DateKey | null>(null);
   const [view, setView] = useState<View>("calendar");
   const [yearView, setYearView] = useState(false);
-  const [yearFocus, setYearFocus] = useState(() => new Date().getFullYear());
+  const [yearFocus, setYearFocus] = useState(2026);
   /** Ledger form: an entry to edit, a name to prefill, or closed. */
   const [prSheet, setPRSheet] = useState<PRSheet | null>(null);
 
@@ -351,7 +352,9 @@ export default function Home() {
     prEntries,
     trainedDays,
     todayKey,
-    sheetDate: view === "calendar" ? sheetDate : null,
+    yearView,
+    yearFocus,
+    sheetDate: view === "calendar" && !yearView ? sheetDate : null,
     onMarkCompleted: (date: DateKey) => commitDays(markCompleted(trainedDays, date)),
     onSelectSplit: (date: DateKey, split: Split) => {
       const current = trainedDays[date]?.split;
@@ -360,6 +363,12 @@ export default function Home() {
     onClearDay: handleClearDay,
     onRemovePR: handleRemovePR,
     onCloseSheet: () => setSheetDate(null),
+    onOpenToday: () => {
+      jumpToToday();
+      setView("calendar");
+      setSheetDate(getTodayKey());
+    },
+    onOpenPRs: () => setView("prs"),
     prSheet: view === "prs" ? prSheet : null,
     onSubmitPR: (input: PRFormInput) => {
       if (prSheet?.mode === "edit") {
@@ -391,12 +400,11 @@ export default function Home() {
     },
   };
 
-  // Phone: while a calendar day sheet is open, the calendar column and the
-  // dock trade flex-grow so the month collapses into a week strip and the
-  // sheet grows into a stable working height. Desktop ignores this (`.sheet-
-  // grow-*` is overridden ≥1024px) — the rail holds the form.
+  // Phone: the calendar column is content-sized (fixed week rows). The dock
+  // always fills what's left, so the sheet has two heights — rest (full month
+  // above) and week-focus (one week above). Desktop ignores `.sheet-grow-*`.
   const calendarActive = view === "calendar";
-  const sheetOpen = calendarActive && sheetDate !== null;
+  const sheetOpen = calendarActive && !yearView && sheetDate !== null;
 
   return (
     <div className="flex h-dvh w-full">
@@ -431,9 +439,11 @@ export default function Home() {
         <div
           className={[
             "flex min-h-0 flex-col pt-3 pb-4 sm:pt-4",
+            // Phone theme sheet fills to the header; calendar (month rest,
+            // week-focus, or year) stays mounted and returns on close.
+            themeOpen ? "max-lg:hidden" : "",
             calendarActive ? "sheet-grow-cal" : "flex-1",
           ].join(" ")}
-          style={calendarActive ? { flexGrow: sheetOpen ? 0 : 1 } : undefined}
         >
           {!mounted ? (
             <p className="text-dim">loading…</p>
@@ -448,15 +458,19 @@ export default function Home() {
           ) : view === "gallery" ? (
             <div className="flex flex-1 items-center justify-center text-dim">gallery — not built yet</div>
           ) : (
-            <div className="flex min-h-0 flex-1 flex-col">
+            <div className="relative flex flex-col lg:min-h-0 lg:flex-1">
               <Calendar
                 activeMonth={month}
                 todayKey={todayKey}
                 trainedDays={trainedDays}
                 cursorDate={cursorDate}
-                onTap={(date) =>
-                  setSheetDate((current) => (current === date ? null : date))
-                }
+                onTap={(date) => {
+                  if (!isSameMonth(date, month)) {
+                    if (!isDateKeyInRange(date, todayKey)) return;
+                    goToMonth(startOfMonth(parseDateKey(date)));
+                  }
+                  setSheetDate((current) => (current === date ? null : date));
+                }}
                 sheetDate={sheetDate}
                 yearView={yearView}
                 yearFocus={yearFocus}
@@ -465,6 +479,14 @@ export default function Home() {
                 canGoPrevYear={canGoPrevYear}
                 canGoNextYear={canGoNextYear}
               />
+              {sheetOpen ? (
+                <button
+                  type="button"
+                  className="absolute inset-0 z-10 cursor-pointer lg:hidden"
+                  aria-label="Close day sheet"
+                  onClick={() => setSheetDate(null)}
+                />
+              ) : null}
             </div>
           )}
         </div>
@@ -472,13 +494,15 @@ export default function Home() {
         <MobileDock
           calendarView={calendarActive}
           sheetOpen={sheetOpen}
-          view={view}
-          onSelectView={setView}
           {...currentCard}
         />
+
+        <footer className="-mx-4 flex shrink-0 justify-center px-2 pb-[max(1rem,env(safe-area-inset-bottom))] lg:hidden">
+          <BottomNav view={view} onSelectView={setView} />
+        </footer>
       </main>
 
-      <RightRail {...currentCard} />
+      {!yearView ? <RightRail {...currentCard} /> : null}
     </div>
   );
 }

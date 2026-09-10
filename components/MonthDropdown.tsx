@@ -12,8 +12,8 @@ export type MonthDropdownProps = {
   countsByMonth: Record<string, number>;
   currentMonthKey: string;
   onSelectMonth: (month: Date) => void;
-  /** `title` is the phone calendar's large month name. */
-  variant?: "path" | "title";
+  /** `title` is the phone calendar's large month name; `chevron` is the chip beside it. */
+  variant?: "path" | "title" | "chevron";
 };
 
 export default function MonthDropdown({
@@ -51,22 +51,36 @@ export default function MonthDropdown({
         onClick={() => setOpen((value) => !value)}
         aria-haspopup="listbox"
         aria-expanded={open}
+        aria-label={variant === "chevron" ? `Choose month, ${monthFullName(activeMonth)}` : undefined}
         className={
-          variant === "title"
+          variant === "chevron"
+            ? [
+                "inline-flex h-9 w-9 items-center justify-center rounded-lg bg-surface/40 text-xl text-dim/40",
+                PRESSABLE,
+                "hover:bg-surface hover:text-dim",
+                FOCUS_RING,
+              ].join(" ")
+            : variant === "title"
             ? ["inline-flex items-center gap-1", PAGE_TITLE, PRESSABLE, FOCUS_RING].join(" ")
             : `cursor-pointer text-accent glow transition-colors ${FOCUS_RING}`
         }
       >
-        {variant === "title" ? monthFullName(activeMonth) : monthPath(activeMonth)}
-        <span className="inline-flex text-dim" aria-hidden>
-          {variant === "title" ? (
-            open ? <ChevronDown size={18} /> : <ChevronRight size={18} />
-          ) : open ? (
-            <ChevronUp size={14} />
-          ) : (
-            <ChevronDown size={14} />
-          )}
-        </span>
+        {variant === "chevron" ? (
+          <span aria-hidden>{open ? "‹" : "›"}</span>
+        ) : variant === "title" ? (
+          monthFullName(activeMonth)
+        ) : (
+          monthPath(activeMonth)
+        )}
+        {variant === "title" ? (
+          <span className="inline-flex text-dim" aria-hidden>
+            {open ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+          </span>
+        ) : variant === "path" ? (
+          <span className="inline-flex text-dim" aria-hidden>
+            {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </span>
+        ) : null}
       </button>
 
       {open ? (

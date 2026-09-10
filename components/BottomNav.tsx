@@ -17,12 +17,12 @@ export type BottomNavProps = {
   onSelectView: (view: View) => void;
 };
 
-/** Phone-only tab bar. Floats as its own card at the foot of the screen. */
+/** Phone-only tab bar. Always at the foot of the app, independent of the sheet. */
 export default function BottomNav({ view, onSelectView }: BottomNavProps) {
   return (
     <nav
       aria-label="Views"
-      className="mx-auto mt-2 flex w-fit shrink-0 gap-1 rounded-2xl bg-surface p-2 lg:hidden"
+      className="mx-auto flex h-[54px] w-fit shrink-0 gap-1 rounded-2xl p-2 lg:hidden"
     >
       {VIEWS.map((name) => {
         const active = view === name;
@@ -35,10 +35,10 @@ export default function BottomNav({ view, onSelectView }: BottomNavProps) {
             aria-current={active ? "page" : undefined}
             aria-label={VIEW_LABELS[name]}
             className={[
-              "group relative tap-target flex items-center justify-center rounded-xl px-4 py-3",
+              "group relative tap-target flex h-11 w-12 shrink-0 items-center justify-center rounded-xl",
               PRESSABLE,
               FOCUS_RING,
-              active ? "bg-fg/10 text-fg hover:bg-fg/15" : "text-dim hover:bg-fg/5 hover:text-accent",
+              active ? "bg-surface text-accent hover:bg-fg/10" : "text-dim hover:bg-fg/5 hover:text-fg",
             ].join(" ")}
           >
             <Icon size={22} aria-hidden />

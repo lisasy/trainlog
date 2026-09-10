@@ -35,4 +35,4 @@ export const FOCUS_RING =
 export const SECTION_LABEL = "text-sm tracking-wide text-dim uppercase";
 
 /** Page title in the app header — calendar month and every other view. */
-export const PAGE_TITLE = "text-2xl leading-none text-fg";
+export const PAGE_TITLE = "text-xl font-semibold leading-none text-fg";

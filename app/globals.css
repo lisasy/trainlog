@@ -11,7 +11,7 @@
    * `--dim` is ansi 8 lifted until it's legible as secondary UI text.
    */
   --bg: #191919;
-  --surface: #242424;
+  --surface: #1f1f1f;
   --fg: #bbbbbb;
   --accent: #b77e64;
   /* Lifted from #7d7472 - the original only hit 3.9:1 on --bg, failing WCAG
@@ -40,9 +40,9 @@
    *   --day-stride  --day-row + the 4px row gap — the translateY unit used
    *                 to slide the stack to the focused week
    *   --year-cell   the day-cell edge in year view (a shrunk month cell) */
-  --day-cell-h: 68px;
-  --day-row: 68px;
-  --day-stride: 72px;
+  --day-cell-h: 56px;
+  --day-row: 56px;
+  --day-stride: 60px;
   --year-cell: 12px;
 }
 
@@ -353,16 +353,19 @@ body {
 }
 
 /*
- * Phone: the calendar column and the dock trade flex-grow so the month
- * shrinks into a week strip while the day sheet expands into the rest.
- * `min-height: min-content` keeps each pane from collapsing through its
- * chrome while grow is 0. Desktop ignores this — the rail holds the form.
+ * Phone: the calendar column sizes to its week stack. The dock fills the
+ * leftover. Week-focus only changes `.week-viewport` height — the sheet's two
+ * heights fall out of that. Desktop ignores this — the rail holds the form.
  */
-.sheet-grow-cal,
+.sheet-grow-cal {
+  flex-grow: 0;
+  flex-shrink: 0;
+  flex-basis: auto;
+}
+
 .sheet-grow-dock {
   flex-basis: 0;
-  min-height: min-content;
-  transition: flex-grow var(--sheet-duration) var(--sheet-ease);
+  min-height: 0;
 }
 
 /*
@@ -382,6 +385,10 @@ body {
   }
 }
 
+.sheet-body-in {
+  animation: cal-fade-in 200ms var(--sheet-ease) both;
+}
+
 /*
  * Phone month view: a fixed-height viewport that clips the week stack. At
  * rest it's exactly tall enough for every week; when a day sheet opens it
@@ -391,11 +398,16 @@ body {
 .week-viewport {
   overflow: hidden;
   height: calc(var(--week-count, 6) * var(--day-stride));
-  transition: height var(--sheet-duration) var(--sheet-ease);
+  transition:
+    height var(--sheet-duration) var(--sheet-ease),
+    margin-top var(--sheet-duration) var(--sheet-ease);
 }
 
 .week-viewport[data-focus="true"] {
-  height: calc(var(--day-row) + 0.5rem);
+  /* Sit the week row up against the weekday labels; extra height was
+   * showing the previous row's rings in the gap. */
+  margin-top: 0;
+  height: var(--day-row);
 }
 
 .week-stack {
@@ -420,6 +432,10 @@ body {
   transition: none;
 }
 
+.year-heatmap-slot {
+  min-height: 0;
+}
+
 @media (min-width: 1024px) {
   .sheet-grow-cal {
     flex-grow: 1 !important;
@@ -436,6 +452,7 @@ body {
 
   .week-viewport[data-focus="true"] {
     height: auto;
+    margin-top: 0.375rem;
   }
 
   .week-stack {
@@ -449,6 +466,15 @@ body {
   .week-stack[data-density="year"] {
     grid-template-rows: repeat(var(--week-count), auto);
     height: auto;
+    max-width: none;
+    gap: 4px;
+    /* Largest square-cell grid that fits the slot — width or height, not both. */
+    width: min(100cqw, calc(100cqh * 7 / var(--week-count, 6)));
+    aspect-ratio: 7 / var(--week-count, 6);
+  }
+
+  .year-heatmap-slot {
+    container-type: size;
   }
 }
 
@@ -460,7 +486,8 @@ body {
     transition: none;
   }
 
-  .cal-fade {
+  .cal-fade,
+  .sheet-body-in {
     animation: none;
   }
 }
