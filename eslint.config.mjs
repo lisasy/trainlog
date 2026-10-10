@@ -20,6 +20,8 @@ const eslintConfig = [
       "out/**",
       "build/**",
       "next-env.d.ts",
+      // Separate Vite wireframe; not part of the Next app.
+      "parking-nav/**",
     ],
   },
 ];
