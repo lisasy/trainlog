@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Parking nav · Silver Lake to Grand Central Market</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231a73e8'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-family='Arial' font-size='18' font-weight='700' fill='white'%3EP%3C/text%3E%3C/svg%3E"
+    />
+  </head>
+  <body>
+    <div id="map"></div>
+    <aside class="panel" id="panel">
+      <div class="panel-top">
+        <header class="panel-head">
+          <p class="eyebrow">Sample trip · Saturday afternoon</p>
+          <h1>Silver Lake <span class="to">to</span> Grand Central Market</h1>
+          <p class="sub">
+            Totals add the drive from Silver Lake, time to park, and the walk
+            to the market.
+          </p>
+          <p class="legend">
+            <span class="legend-drive">Drive</span>
+            <span class="legend-walk">Walk to market</span>
+          </p>
+        </header>
+
+        <section class="selection" id="selection" aria-live="polite">
+          <div class="selection-row">
+            <div>
+              <p class="kicker" id="selection-kicker">Parking</p>
+              <h2 id="selection-name">No spot selected</h2>
+              <p class="selection-type" id="selection-type"></p>
+            </div>
+            <button type="button" class="text-btn pressable" id="clear" hidden>
+              Clear
+            </button>
+          </div>
+          <div class="metrics">
+            <div class="metric metric-price">
+              <p class="metric-value" id="selection-price" data-field="price">—</p>
+              <p class="metric-label">Price to park</p>
+            </div>
+            <div class="metric metric-time">
+              <p class="metric-value" id="selection-time" data-field="total">—</p>
+              <p class="metric-label">Drive + park + walk</p>
+            </div>
+          </div>
+          <p class="breakdown" id="selection-breakdown">
+            Pick a garage or lot. The map keeps the drive to the market until
+            you do.
+          </p>
+          <p class="compare-line" id="selection-compare"></p>
+        </section>
+
+        <div class="tools">
+          <div class="segment" role="group" aria-label="Sort parking options">
+            <button
+              type="button"
+              class="pressable"
+              id="sort-time"
+              aria-pressed="true"
+            >
+              Faster
+            </button>
+            <button
+              type="button"
+              class="pressable"
+              id="sort-price"
+              aria-pressed="false"
+            >
+              Cheaper
+            </button>
+          </div>
+        </div>
+
+        <div class="compare" id="compare"></div>
+      </div>
+      <div class="list" id="list" role="list"></div>
+    </aside>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
